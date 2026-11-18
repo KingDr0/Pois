@@ -1,0 +1,12 @@
+{
+  "name": "pois-tools",
+  "private": true,
+  "description": "Builds cloud.js (Firebase sign-in, sync and AI) for Pois",
+  "scripts": {
+    "build": "esbuild cloud-src.js --bundle --minify --format=iife --target=es2020 --outfile=../cloud.js"
+  },
+  "devDependencies": {
+    "firebase": "13.2.0",
+    "esbuild": "0.24.2"
+  }
+}
