@@ -68,7 +68,7 @@ async function generate({ system, messages, json, models }) {
         generationConfig: json ? { responseMimeType: "application/json" } : undefined
       });
       const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-      const r = await model.generateContent({ contents });
+      const r = await Promise.race([model.generateContent({ contents }), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 25000))]);
       return { text: r.response.text(), model: name };
     } catch (e) {
       lastErr = e;
@@ -76,7 +76,7 @@ async function generate({ system, messages, json, models }) {
       if (/429|quota|RESOURCE_EXHAUSTED/i.test(msg)) throw { code: "rate_limited", message: msg };
       if (/app ?check/i.test(msg)) throw { code: "app_check", message: msg };
       /* model not found / not allowed on this tier: try the next one */
-      if (/404|not found|not supported|permission|403|400/i.test(msg)) continue;
+      if (/timeout|404|not found|not supported|permission|403|400/i.test(msg)) continue;
       throw { code: "error", message: msg };
     }
   }

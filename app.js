@@ -338,7 +338,7 @@ const LEVELS = {
 const AI_LS = "pois.ai.v1";
 const PROVIDERS = {
   builtin: { label: "Built-in free tutor", sub: "Gemini, free with a daily limit. Needs Google sign-in." },
-  gemini: { label: "My Gemini key", sub: "Free key from Google AI Studio.", model: "gemini-3.5-flash", url: "https://aistudio.google.com/apikey", co: "Google" },
+  gemini: { label: "My Gemini key", sub: "Free key from Google AI Studio.", model: "gemini-3.5-flash-lite", url: "https://aistudio.google.com/apikey", co: "Google" },
   claude: { label: "My Claude key", sub: "Anthropic API key, paid per use.", model: "claude-haiku-5-5", url: "https://console.anthropic.com/settings/keys", co: "Anthropic" },
   openai: { label: "My OpenAI key", sub: "OpenAI API key, paid per use.", model: "gpt-5-mini", url: "https://platform.openai.com/api-keys", co: "OpenAI" },
   grok: { label: "My Grok key", sub: "xAI API key, paid per use.", model: "grok-4.3", url: "https://console.x.ai", co: "xAI" }
@@ -347,7 +347,7 @@ let AIC = { provider: "builtin", keys: {}, models: {} };
 try { AIC = { ...AIC, ...JSON.parse(localStorage.getItem(AI_LS) || "{}") }; } catch (e) {}
 const saveAIC = () => { try { localStorage.setItem(AI_LS, JSON.stringify(AIC)); } catch (e) {} };
 const CFG = window.POIS_CONFIG || {};
-const GEMINI_MODELS = CFG.geminiModels || ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash"];
+const GEMINI_MODELS = CFG.geminiModels || ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3.5-flash"];
 const DAILY_LIMIT = CFG.builtinDailyLimit || 80;
 function aiState() {
   if (AIC.provider === "builtin") {
