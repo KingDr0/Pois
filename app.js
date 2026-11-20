@@ -45,7 +45,7 @@ const LS_KEY = "pois.ptpt.v1";
 function freshState() {
   return { v: 1, updated: 0, xp: 0, days: {}, streak: 0, last: "", freezes: 0, units: {}, cards: {}, mistakes: {}, custom: {}, gen: [], vm: {}, wotdSeen: "", wotdDone: {}, mine: {}, words: {}, badges: {}, libVisit: 0, wpick: null,
     stats: { ans: 0, ok: 0, lessons: 0, chats: 0, verbAns: 0, verbOk: 0 },
-    settings: { goal: 30, rate: 1, voice: "", level: "A1", autoplay: true, dir: "mix", vrange: 25, vmode: "order" } };
+    settings: { goal: 30, rate: 1, voice: "", level: "A1", autoplay: true, sfx: true, dir: "mix", vrange: 25, vmode: "order" } };
 }
 function normalize(s) {
   const f = freshState();
@@ -236,6 +236,39 @@ function checkPT(input, accepted) {
   return { ok: false };
 }
 const similarity = (a, b) => { a = strip(a); b = strip(b); const L = Math.max(a.length, b.length) || 1; return 1 - lev(a, b) / L; };
+
+
+/* ---------- Sound effects (synthesised with Web Audio, no files) ---------- */
+let ACTX = null;
+function actx() {
+  if (!ACTX) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; try { ACTX = new C(); } catch (e) { return null; } }
+  if (ACTX.state === "suspended") ACTX.resume().catch(() => {});
+  return ACTX;
+}
+function tone(c, f, t, dur, { type = "sine", vol = 0.16, slideTo } = {}) {
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.03);
+}
+const SFX = {
+  right: (c, t) => { tone(c, 880, t, 0.14); tone(c, 1318.5, t + 0.085, 0.34); tone(c, 2637, t + 0.085, 0.22, { vol: 0.025 }); },
+  wrong: (c, t) => { tone(c, 233, t, 0.2, { type: "triangle", vol: 0.24, slideTo: 196 }); tone(c, 175, t + 0.13, 0.28, { type: "triangle", vol: 0.2, slideTo: 147 }); },
+  pair: (c, t) => { tone(c, 1046.5, t, 0.12, { vol: 0.11 }); tone(c, 1568, t + 0.05, 0.14, { vol: 0.07 }); },
+  done: (c, t) => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(c, f, t + i * 0.1, i === 3 ? 0.55 : 0.16, { vol: 0.14 })),
+  badge: (c, t) => { [392, 523.25, 659.25, 783.99].forEach((f, i) => tone(c, f, t + i * 0.12, 0.18, { type: "triangle", vol: 0.14 })); [523.25, 659.25, 783.99, 1046.5].forEach(f => tone(c, f, t + 0.52, 1.1, { vol: 0.09 })); },
+  book: (c, t) => { tone(c, 1760 + Math.random() * 400, t, 0.07, { type: "triangle", vol: 0.05 }); tone(c, 140, t, 0.06, { vol: 0.08 }); }
+};
+const SFX_LEN = { right: 380, wrong: 420, pair: 0, done: 700, badge: 0, book: 0 };
+function sfx(name) {
+  if (S.settings.sfx === false) return 0;
+  const c = actx(); if (!c) return 0;
+  try { SFX[name](c, c.currentTime + 0.01); } catch (e) { return 0; }
+  return SFX_LEN[name] || 0;
+}
+/* browsers only allow audio after a tap: wake the audio engine on the first one */
+["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, () => actx(), { once: true, capture: true }));
 
 /* ---------- Word ladder & library ---------- */
 const LW = LADDER_WORDS.map(([pt, pos, en, xpt, xen, rank, alt], i) => ({ i, pt, pos, en, xpt, xen, rank, alt: alt ? alt.split(",").map(x => x.trim()) : [] }));
@@ -991,9 +1024,10 @@ function settingsScreen() {
     ${sysMode() ? `<div class="small">Using your device's own Portugal voice (the app can't list it). <button class="btn ghost" data-a="sysoff">Turn off</button></div>` : ""}
     <details><summary class="small">What voices can this page see?</summary><div class="small muted">${ALL_VOICES.length} voices in total.${PT_SEEN.length ? " Portuguese: " + PT_SEEN.map(v => esc(v.name) + " (" + esc(v.lang) + ")" + (isPT(v) ? " ✓ Portugal" : " ✗ not Portugal")).join(", ") : " No Portuguese voices."}</div></details>
     <b class="small">Speed</b><div class="seg">${[[0.75, "Slow"], [0.9, "Relaxed"], [1, "Normal"], [1.15, "Fast"]].map(([r, l]) => `<button data-a="rate" data-r="${r}" aria-pressed="${S.settings.rate === r}">${l}</button>`).join("")}</div>
-    <label class="row small"><input type="checkbox" id="autoplay" ${S.settings.autoplay ? "checked" : ""}> Play audio automatically</label></section>
+    <label class="row small"><input type="checkbox" id="autoplay" ${S.settings.autoplay ? "checked" : ""}> Play audio automatically</label>
+    <label class="row small"><input type="checkbox" id="sfxon" ${S.settings.sfx !== false ? "checked" : ""}> Sound effects for right and wrong answers</label></section>
   <section class="card stack"><h3>AI tutor</h3>
-    <div class="small muted">Powers Conversa, the translator, grammar help, "explain my answer" and sentence checks.</div>
+    <div class="small muted">Powers Chat, the translator, grammar help, "explain my answer" and sentence checks.</div>
     <div class="stack" style="gap:8px">${Object.entries(PROVIDERS).map(([k, p]) => `<label class="row small" style="align-items:flex-start"><input type="radio" name="aiprov" value="${k}" ${AIC.provider === k ? "checked" : ""} style="margin-top:4px"><span><b>${p.label}</b><br><span class="muted">${p.sub}</span></span></label>`).join("")}
       <div class="row small muted" style="align-items:flex-start"><input type="radio" disabled style="margin-top:4px"><span><b>Sign in with ChatGPT</b><br>Coming once OpenAI approves the app.</span></div></div>
     ${AIC.provider === "builtin" ? `<div class="small">${aiState() === "ok" ? `Today: ${(S.aiDay && S.aiDay.d === today() ? S.aiDay.n : 0)} of ${DAILY_LIMIT} free messages used.` : aiState() === "signin" ? "Sign in with Google to use it." : "Not set up on this copy of Pois."}</div>${aiState() === "signin" ? googleBtn() : ""}`
@@ -1041,7 +1075,7 @@ function showMilestone() {
   const n = S.pendingBadge; delete S.pendingBadge; save();
   const t = LADDER_TIERS.find(x => x.n === n); if (!t) return;
   const nextT = LADDER_TIERS.find(x => x.n > n);
-  const ov = $("#ov"); ov.hidden = false;
+  const ov = $("#ov"); ov.hidden = false; sfx("badge");
   ov.innerHTML = `<div class="obody milestone" style="justify-content:center;align-items:center;text-align:center">
     <div class="confetti" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => `<i style="--i:${i};left:${Math.random() * 100}%;animation-delay:${(-Math.random() * 2.6).toFixed(2)}s;animation-duration:${(2.2 + Math.random() * 1.6).toFixed(2)}s"></i>`).join("")}</div>
     <div class="medal" aria-hidden="true">${t.badge}</div>
@@ -1196,7 +1230,8 @@ function doCheck() {
   recordAnswer(e.item.key, r.ok);
   if (!r.ok && !e.retry) L.ex.push({ ...e, retry: true, opts: e.opts ? shuffle(e.opts) : undefined });
   save(); renderLesson();
-  if (S.settings.autoplay) speak(e.item.pt);
+  const d = sfx(r.ok ? "right" : "wrong");
+  if (S.settings.autoplay) setTimeout(() => { if (L && L.ex[L.i] === e) speak(e.item.pt); }, d);
 }
 function lessonNext() {
   L.i++;
@@ -1216,7 +1251,7 @@ function finishLesson() {
   if (L.opts.wotd) { S.wotdDone[today()] = true; const ks = Object.keys(S.wotdDone).sort().slice(-60); const d = {}; ks.forEach(k => d[k] = true); S.wotdDone = d; note = "Today's word is in your review deck. Get it right again on another day and its book joins your library."; }
   S.stats.lessons++; addXP(xp);
   const books = learnedCount() - (L.lc0 ?? learnedCount());
-  L.state = "end"; L.result = { xp, acc, up, note, books }; renderLesson();
+  L.state = "end"; L.result = { xp, acc, up, note, books }; renderLesson(); sfx("done");
 }
 async function explainAnswer() {
   const e = L.ex[L.i], it = e.item;
@@ -1427,7 +1462,7 @@ function runFly() {
       { transform: `translate(${dx * 0.3}px,${dy * 0.3 - 30}px) scale(1.6) rotate(${j % 2 ? -8 : 8}deg)`, offset: 0.7 },
       { transform: "none", opacity: 1 }
     ], { duration: 900, delay: 250 + j * 110, easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards" });
-    a.onfinish = () => { b.classList.remove("fly"); b.classList.add("land"); };
+    a.onfinish = () => { b.classList.remove("fly"); b.classList.add("land"); if (j < 40) sfx("book"); };
   });
 }
 
@@ -1448,6 +1483,7 @@ function render() {
   const ak = $("#aikey"); if (ak) ak.onchange = () => { AIC.keys[AIC.provider] = ak.value.trim(); saveAIC(); refreshAI(); render(); };
   const am = $("#aimodel"); if (am) am.onchange = () => { AIC.models[AIC.provider] = am.value.trim(); saveAIC(); };
   const ap = $("#autoplay"); if (ap) ap.onchange = () => { S.settings.autoplay = ap.checked; save(); };
+  const sx = $("#sfxon"); if (sx) sx.onchange = () => { S.settings.sfx = sx.checked; save(); if (sx.checked) sfx("right"); };
   const vin = $("#vin"); if (vin) vin.onkeydown = ev => { if (ev.key === "Enter") { ev.preventDefault(); ACT.vcheck(); } };
   const chin = $("#chin"); if (chin) chin.onkeydown = ev => { if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); ACT.chsend(); } };
   if (TAB === "chat" && CH.started) { const c = $(".chat"); if (c) c.lastElementChild && c.lastElementChild.scrollIntoView({ block: "end" }); }
@@ -1495,7 +1531,7 @@ const ACT = {
           recordAnswer(e.item.key, a.ok); sp.firstOk = a.ok; save();
         }
         L.fb = { ok: a.ok, speech: a, firstTryMissed: !sp.firstOk };
-        L.state = "fb"; renderLesson();
+        L.state = "fb"; renderLesson(); sfx(a.ok ? "right" : "wrong");
         if (!a.perfect && AI) {
           const fb = L.fb; fb.tipBusy = true; renderLesson();
           pronunciationTip(e.item.pt, a).then(t => { fb.tip = t; }).catch(() => {}).finally(() => { fb.tipBusy = false; if (L && L.fb === fb) renderLesson(); });
@@ -1508,8 +1544,8 @@ const ACT = {
     const m = L.m, side = b.dataset.side, k = b.dataset.k;
     if (side === "l") { m.l = k; speak(getItem(k).pt); } else m.r = k;
     if (m.l && m.r) {
-      if (m.l === m.r) { m.done.add(m.l); recordAnswer(m.l, true); }
-      else { m.errs++; m.flash = ["l" + m.l, "r" + m.r]; recordAnswer(m.l, false); setTimeout(() => { if (L && L.m === m) { m.flash = null; renderLesson(); } }, 600); }
+      if (m.l === m.r) { m.done.add(m.l); recordAnswer(m.l, true); sfx(m.done.size === m.left.length ? "right" : "pair"); }
+      else { m.errs++; sfx("wrong"); m.flash = ["l" + m.l, "r" + m.r]; recordAnswer(m.l, false); setTimeout(() => { if (L && L.m === m) { m.flash = null; renderLesson(); } }, 600); }
       m.l = m.r = null;
     }
     if (m.done.size === L.ex[L.i].items.length) {
@@ -1579,7 +1615,7 @@ const ACT = {
     const r = checkPT(v, [VB.q.ans]);
     VB.fb = r; S.stats.verbAns++; const was = vMastered(VB.q.v);
     if (r.ok) { S.stats.verbOk++; VB.run++; S.vm[VB.q.v] = (S.vm[VB.q.v] || 0) + 1; VB.fb.newly = !was && vMastered(VB.q.v); addXP(1); } else { VB.run = 0; S.vm[VB.q.v] = 0; save(); }
-    render(); speak(PERSONS[VB.q.p].split(" ")[0] + " " + VB.q.ans);
+    render(); const d = sfx(r.ok ? "right" : "wrong"); const say = PERSONS[VB.q.p].split(" ")[0] + " " + VB.q.ans; setTimeout(() => speak(say), d);
     const n = $("[data-a=vnext]"); if (n) n.focus();
   },
   vnext: () => { newVerbQ(); render(); const i = $("#vin"); if (i) i.focus(); },
@@ -1630,7 +1666,7 @@ const ACT = {
     const w = LW[W.i], t = (W.mine || "").trim(); if (!t) { toast("Write a sentence first."); return; }
     W.busy = true; renderWotd();
     const prompt = `${PT_RULES}\nA learner (${S.settings.level}) wrote a sentence to practise the word "${w.pt}" (${w.en}). ${spoken ? "The sentence was spoken and transcribed by speech recognition, so if a word looks like a mis-recognition of a Portuguese word, assume they meant that word and mention in explanation which word didn't come through clearly, with a short pronunciation tip. " : ""}Check it. Return ONLY JSON: {"ok": true if it is correct, natural European Portuguese and uses the word (any form), else false, "corrected": "the sentence rewritten as natural European Portuguese using the word", "explanation": "one or two short, encouraging English sentences; if they used a word or form not used in Portugal, give the Portugal one without mentioning other countries", "translation": "English translation of the corrected sentence"}\nSentence: """${t}"""`;
-    try { const r = await askJSON(prompt, { modelTier: "default" }); if (W) { W.fb = { ok: !!r.ok, corrected: String(r.corrected || t), explanation: String(r.explanation || ""), translation: String(r.translation || ""), sentence: t }; if (r.ok) { S.mine[today()] = t; addXP(3); } S.stats.chats++; save(); } }
+    try { const r = await askJSON(prompt, { modelTier: "default" }); if (W) { W.fb = { ok: !!r.ok, corrected: String(r.corrected || t), explanation: String(r.explanation || ""), translation: String(r.translation || ""), sentence: t }; if (r.ok) { S.mine[today()] = t; addXP(3); } sfx(r.ok ? "right" : "wrong"); S.stats.chats++; save(); } }
     catch (e) { toast(aiErr(e)); }
     if (W) { W.busy = false; renderWotd(); const say = W.fb && (W.fb.ok ? W.fb.sentence : W.fb.corrected); if (say && S.settings.autoplay) speak(say); }
   },
