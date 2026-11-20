@@ -515,7 +515,7 @@ In 1 to 3 short sentences in English, say which sound was probably the problem i
 
 /* ---------- AI tutor ---------- */
 let AI = null;
-const PT_RULES = `Write ONLY European Portuguese as spoken in Portugal (pt-PT). Never use Brazilian Portuguese. In particular:
+const PT_RULES = `The learner is an English speaker learning Portuguese. Every bit of Portuguese you write must be European Portuguese as spoken in Portugal (pt-PT), never Brazilian Portuguese. This rule is about which Portuguese to use, not the language of your reply: whenever the task asks for an explanation, feedback, a tip or a translation, write it in English (quoting Portuguese words as examples only). For Portuguese:
 - Portugal vocabulary: comboio, autocarro, elétrico, pequeno-almoço, telemóvel, casa de banho, frigorífico, sumo, ementa, fixe, rapariga, miúdo, talho, paragem, fatura, ecrã, rato (computer mouse).
 - Progressive aspect with "estar a + infinitivo" (estou a fazer), never the gerund (estou fazendo).
 - Clitic pronouns after the verb in plain affirmative sentences (chamo-me, diz-me, dá-me), before it after negation, question words and certain adverbs (não me lembro, como te chamas).
@@ -1262,7 +1262,7 @@ async function explainAnswer() {
     const prompt = `You are a patient teacher of European Portuguese.
 ${PT_RULES}
 A learner did an exercise. Prompt shown: "${shown}". Expected answer: "${e.type === "pt2en" ? it.en : it.pt}". Learner answered: "${given}".
-In 2 to 4 short sentences in English, explain what was wrong and the rule behind the right answer. If they used a word or form not used in Portugal, just give the Portugal one; do not mention other countries. Plain text, no headings.`;
+In 2 to 4 short sentences written in English (the learner doesn't understand Portuguese explanations yet), explain what was wrong and the rule behind the right answer. Quote Portuguese words only as examples, with their English meaning. If they used a word or form not used in Portugal, just give the Portugal one; do not mention other countries. Plain text, no headings.`;
     const r = await AI(prompt, { modelTier: "quick", onText: ({ text }) => { const b = $("#explain"); if (b) b.innerHTML = `<div class="small">${richText(text)}</div>`; } });
     L.explain = r.text; const b = $("#explain"); if (b) b.innerHTML = `<div class="small">${richText(r.text)}</div>`;
   } catch (err) { const b = $("#explain"); if (b) b.innerHTML = `<div class="small">${esc(aiErr(err))}</div>`; }
