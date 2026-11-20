@@ -1,0 +1,501 @@
+# word | example (pt-PT) | English
+o|O dia está muito bom.|The day is very nice.
+a|A casa é muito boa.|The house is very good.
+um|Eu tenho uma casa em Faro.|I have a house in Faro.
+de|É a casa da Rita.|It's Rita's house.
+em|Ele está em casa.|He's at home.
+e|O João e a Ana estão em casa.|João and Ana are at home.
+eu|Eu sou o Pedro.|I'm Pedro.
+tu|Tu estás em casa?|Are you at home?
+ele|Ele tem uma casa muito boa.|He has a very nice house.
+ela|Ela não está em casa.|She isn't at home.
+você|Você tem casa em Lisboa?|Do you have a house in Lisbon?
+ser|Eu sou de Lisboa.|I'm from Lisbon.
+estar|Eu estou em casa.|I'm at home.
+ter|Tu tens uma casa no Porto?|Do you have a house in Porto?
+não|Não, eu não sou de Lisboa.|No, I'm not from Lisbon.
+sim|Sim, ela é de Coimbra.|Yes, she's from Coimbra.
+casa|A Rita está em casa.|Rita is at home.
+dia|Bom dia!|Good morning!
+bom|O dia está bom.|It's a nice day.
+muito|Ela é muito boa.|She's very good.
+que|Eu sei que ela está em casa.|I know that she's at home.
+para|Hoje vou para casa.|Today I'm going home.
+com|Ela está com o João.|She's with João.
+por|Eu vou por aqui.|I'm going this way.
+se|Não sei se ela está em casa.|I don't know if she's at home.
+como|Como estás?|How are you?
+mas|Eu quero ir, mas não posso.|I want to go, but I can't.
+ou|Queres ir hoje ou não?|Do you want to go today or not?
+nós|Nós somos de Lisboa.|We're from Lisbon.
+fazer|O que é que fazes hoje?|What are you doing today?
+ir|Nós vamos para casa agora.|We're going home now.
+querer|Queres ir com a Ana?|Do you want to go with Ana?
+poder|Posso ir com vocês?|Can I go with you?
+saber|Não sei, mas ela sabe.|I don't know, but she does.
+ano|Ela tem 20 anos.|She's 20 years old.
+já|Ele já está aqui.|He's already here.
+aqui|Eu estou aqui com o Pedro.|I'm here with Pedro.
+hoje|Hoje é um bom dia.|Today is a good day.
+agora|Não posso agora.|I can't right now.
+bem|Estou bem, e tu?|I'm fine, and you?
+mais|Ela quer saber mais.|She wants to know more.
+seu|Esta é a sua casa?|Is this your house?
+haver|Há uma casa aqui.|There's a house here.
+este|Este ano vou a Lisboa.|This year I'm going to Lisbon.
+dizer|O que é que ele diz?|What is he saying?
+primeiro|É a primeira vez que estou aqui.|It's the first time I've been here.
+todo|Ela está aqui todos os dias.|She's here every day.
+também|Eu também quero ir.|I want to go too.
+dar|Dou-te mais um dia.|I'll give you one more day.
+dois|Nós temos duas casas.|We have two houses.
+ainda|Ela ainda não está aqui.|She isn't here yet.
+outro|Quero ver outra casa.|I want to see another house.
+entre|Entre nós, eu não quero ir.|Between us, I don't want to go.
+vez|Vou a Lisboa uma vez por ano.|I go to Lisbon once a year.
+ver|Queres ver a casa?|Do you want to see the house?
+local|Este é um bom local para uma casa.|This is a good spot for a house.
+dever|Deves ir agora.|You should go now.
+sobre|Ela quer saber mais sobre Portugal.|She wants to know more about Portugal.
+depois|Depois vamos para casa.|Afterwards we're going home.
+até|Até já!|See you soon!
+só|Eu só tenho um dia em Lisboa.|I only have one day in Lisbon.
+sem|Não posso ir sem ti.|I can't go without you.
+grande|A casa é muito grande.|The house is very big.
+quando|Quando é que vens?|When are you coming?
+isso|Isso é muito bom!|That's really good!
+página|Está na primeira página.|It's on the first page.
+onde|Onde é que tu estás?|Where are you?
+político|Ele é político.|He's a politician.
+novo|Esta casa é nova.|This house is new.
+ficar|Onde fica a casa?|Where is the house?
+vir|Queres vir comigo?|Do you want to come with me?
+tempo|Não tenho tempo hoje.|I don't have time today.
+último|É o último dia.|It's the last day.
+porque|Não vou porque não tenho tempo.|I'm not going because I don't have time.
+passar|Vou passar o dia em casa.|I'm going to spend the day at home.
+me|Ela não me quer ver.|She doesn't want to see me.
+tudo|Está tudo bem?|Is everything OK?
+sempre|Ela está sempre em casa.|She's always at home.
+esse|Essa casa é nova?|Is that house new?
+coisa|Quero dizer uma coisa.|I want to say something.
+pessoa|Ela é uma boa pessoa.|She's a good person.
+homem|Quem é esse homem?|Who's that man?
+parte|De que parte de Portugal és?|Which part of Portugal are you from?
+cultura|A cultura é parte da vida.|Culture is part of life.
+espaço|Não há espaço na casa.|There's no room in the house.
+vida|É a vida!|That's life!
+lhe|Vou dizer-lhe agora.|I'm going to tell him now.
+sociedade|Isso é bom para a sociedade.|That's good for society.
+deixar|Deixa-me ver.|Let me see.
+quem|Quem é ela?|Who is she?
+encontrar|Não encontro a casa.|I can't find the house.
+país|De que país és?|What country are you from?
+internacional|O trabalho dela é internacional.|Her work is international.
+nem|Não sei nem quero saber.|I don't know and I don't want to know.
+forma|Não há outra forma.|There's no other way.
+chegar|Quando é que chegas?|When do you arrive?
+trabalho|Vou para o trabalho.|I'm going to work.
+economia|A economia do país está bem.|The country's economy is doing well.
+mesmo|É a mesma coisa.|It's the same thing.
+três|Tenho três dias em Lisboa.|I have three days in Lisbon.
+algum|Tens algum tempo hoje?|Do you have any time today?
+política|Ela não fala de política.|She doesn't talk about politics.
+qual|Qual é a tua casa?|Which one is your house?
+qualquer|Podes vir a qualquer hora.|You can come at any time.
+caso|Nesse caso, vou contigo.|In that case, I'll go with you.
+meu|Esta é a minha casa.|This is my house.
+aquele|Quem é aquele homem?|Who's that man over there?
+desporto|Ela faz muito desporto.|She does a lot of sport.
+público|Há muito público hoje.|There's a big crowd today.
+hora|Que horas são?|What time is it?
+cada|Cada pessoa tem a sua casa.|Each person has their own house.
+apenas|Tenho apenas uma hora.|I only have an hour.
+direito|Tens direito a isso.|You have a right to that.
+então|Então, como estás?|So, how are you?
+lado|A casa fica ao lado.|The house is next door.
+português|Eu falo português.|I speak Portuguese.
+durante|Durante o dia, ela está no trabalho.|During the day, she's at work.
+falar|Falas português?|Do you speak Portuguese?
+mulher|A mulher dele é de Faro.|His wife is from Faro.
+levar|Vou levar o João a casa.|I'm going to take João home.
+começar|O trabalho começa às 9.|Work starts at 9.
+parecer|Isso parece bom.|That looks good.
+isto|O que é isto?|What's this?
+ontem|Ontem estive em casa.|Yesterday I was at home.
+maior|Lisboa é a maior cidade de Portugal.|Lisbon is the biggest city in Portugal.
+cidade|Que cidade é esta?|What city is this?
+lá|Ela já está lá.|She's already there.
+tão|Isto é tão bom!|This is so good!
+mil|A casa tem mil anos.|The house is a thousand years old.
+jornal|Está no jornal de hoje.|It's in today's newspaper.
+desde|Estou aqui desde ontem.|I've been here since yesterday.
+contra|Ela é contra isso.|She's against that.
+nada|Não tenho nada para fazer.|I have nothing to do.
+educação|A educação é um direito.|Education is a right.
+considerar|Considero isso um bom trabalho.|I consider that good work.
+nunca|Nunca estive em Lisboa.|I've never been to Lisbon.
+continuar|Ela continua em casa.|She's still at home.
+presidente|O presidente fala hoje.|The president speaks today.
+assim|É assim que se faz.|That's how it's done.
+apresentar|Quero apresentar-te a Ana.|I want to introduce you to Ana.
+água|Queres água?|Do you want some water?
+conhecer|Conheces o Porto?|Do you know Porto?
+escola|Ela vai para a escola.|She goes to school.
+tal|Que tal ir ao Porto?|How about going to Porto?
+pensar|Penso que sim.|I think so.
+grupo|Somos um grupo de três.|We're a group of three.
+problema|Não há problema.|No problem.
+conto|É um conto muito bom.|It's a very good short story.
+ponto|Esse é um bom ponto.|That's a good point.
+conseguir|Não consigo ver nada.|I can't see anything.
+mão|Dá-me a mão.|Give me your hand.
+noite|Boa noite! Como estás?|Good evening! How are you?
+mundo|Quero ver o mundo.|I want to see the world.
+exemplo|Dá-me um exemplo.|Give me an example.
+empresa|Ela tem uma empresa.|She has a company.
+facto|De facto, não sei.|In fact, I don't know.
+quase|Já estou quase lá.|I'm almost there.
+valor|Qual é o valor da casa?|What's the house worth?
+pequeno|Portugal é um país pequeno.|Portugal is a small country.
+partir|Partimos hoje à noite.|We leave tonight.
+lugar|Há lugar para mais um?|Is there room for one more?
+filho|Ela tem dois filhos.|She has two children.
+segundo|É a segunda vez que estou aqui.|It's the second time I've been here.
+antes|Chego antes das 8.|I'll arrive before 8.
+pôr|Onde é que ponho isto?|Where do I put this?
+fim|No fim do dia, vou para casa.|At the end of the day, I go home.
+acabar|Já acabaste?|Have you finished already?
+obra|Há obras na casa.|There's building work at the house.
+chamar|Como te chamas? Chamo-me Pedro.|What's your name? My name's Pedro.
+jogo|O jogo começa às 8.|The match starts at 8.
+número|Qual é o teu número?|What's your number?
+existir|Isso não existe!|That doesn't exist!
+sentir|Como te sentes hoje?|How do you feel today?
+relação|Eles têm uma boa relação.|They have a good relationship.
+tornar|Ele tornou-se presidente.|He became president.
+viver|Vivo em Lisboa.|I live in Lisbon.
+meio|Chego às 3 e meia.|I'll arrive at half past 3.
+região|O Algarve é uma região de Portugal.|The Algarve is a region of Portugal.
+senhor|O senhor é de Lisboa?|Are you from Lisbon, sir?
+situação|Como está a situação?|How's the situation?
+processo|É um processo de 3 meses.|It's a 3-month process.
+referir|A que é que te referes?|What are you referring to?
+além|Além disso, não tenho tempo.|Besides, I don't have time.
+entrar|Posso entrar?|May I come in?
+gente|A gente vê-se!|See you around!
+ciência|Ele é um homem de ciência.|He's a man of science.
+milhão|Há 10 milhões de pessoas em Portugal.|There are 10 million people in Portugal.
+mês|Ela vem uma vez por mês.|She comes once a month.
+social|É um problema social.|It's a social problem.
+artigo|O artigo está na página 3.|The article is on page 3.
+enquanto|Enquanto ele fala, eu penso.|While he talks, I think.
+nosso|Esta é a nossa casa.|This is our house.
+sair|Vou sair agora.|I'm going out now.
+aí|Estás aí?|Are you there?
+terra|Qual é a tua terra?|Where's your home town?
+voltar|Volto já!|I'll be right back!
+ali|A escola fica ali.|The school is over there.
+pois|Pois é, é a vida.|That's right, that's life.
+seguir|Segue-me!|Follow me!
+serviço|O serviço aqui é muito bom.|The service here is very good.
+ouvir|Não te ouço bem.|I can't hear you well.
+criar|Ela criou uma empresa.|She set up a company.
+nome|Qual é o teu nome?|What's your name?
+manter|Temos de manter isto entre nós.|We have to keep this between us.
+gostar|Gosto muito de Lisboa.|I really like Lisbon.
+tipo|Que tipo de trabalho fazes?|What kind of work do you do?
+melhor|Este é o melhor dia.|This is the best day.
+longo|Foi um dia muito longo.|It was a very long day.
+semana|Bom fim de semana!|Have a good weekend!
+equipa|A nossa equipa é muito boa.|Our team is very good.
+período|Neste período do ano há muito trabalho.|At this time of year there's a lot of work.
+quatro|Somos quatro.|There are four of us.
+nível|Qual é o teu nível de português?|What's your level of Portuguese?
+permitir|Isso não é permitido.|That's not allowed.
+olho|Ela tem os olhos do pai.|She has her father's eyes.
+área|Esta área é muito boa para viver.|This area is very good to live in.
+projeto|Estou a fazer um novo projeto.|I'm doing a new project.
+importante|Isto é muito importante.|This is very important.
+menos|Hoje há menos gente.|There are fewer people today.
+pai|O meu pai é de Coimbra.|My father is from Coimbra.
+andar|Ela anda na escola.|She goes to school.
+através|Soube através do jornal.|I found out through the newspaper.
+zona|Vivo numa zona muito boa.|I live in a very good area.
+imagem|A imagem não está boa.|The picture isn't good.
+momento|Agora não é o melhor momento.|Now isn't the best moment.
+dentro|Está lá dentro.|It's in there.
+tratar|Eu trato disso.|I'll deal with it.
+diferente|Isso é diferente.|That's different.
+resultado|Qual foi o resultado do jogo?|What was the score of the match?
+palavra|Não conheço esta palavra.|I don't know this word.
+perder|Não quero perder tempo.|I don't want to waste time.
+próximo|Até à próxima!|Until next time!
+sistema|O sistema é novo.|The system is new.
+receber|Ela recebe muita gente em casa.|She has a lot of people over at her house.
+criança|As crianças estão na escola.|The children are at school.
+tomar|Queres tomar alguma coisa?|Would you like something to drink?
+altura|Nessa altura eu vivia no Porto.|At that time I lived in Porto.
+modo|Faz isso de outro modo.|Do it another way.
+olhar|Olha, ali está o João.|Look, there's João.
+nacional|É um jogo da equipa nacional.|It's a national team match.
+contar|Conta-me tudo!|Tell me everything!
+acontecer|O que é que aconteceu?|What happened?
+antigo|É uma casa muito antiga.|It's a very old house.
+afirmar|Ele afirma que não sabe nada.|He claims he doesn't know anything.
+família|A minha família é de Braga.|My family is from Braga.
+possível|Isso não é possível.|That's not possible.
+questão|É uma questão de tempo.|It's a question of time.
+aquilo|O que é aquilo?|What's that over there?
+força|Força, tu consegues!|Go on, you can do it!
+canal|Em que canal é o jogo?|What channel is the match on?
+condição|Vou, com uma condição.|I'll go, on one condition.
+pouco|Falo um pouco de português.|I speak a little Portuguese.
+talvez|Talvez ela venha.|Maybe she'll come.
+apesar|Apesar de tudo, estou bem.|Despite everything, I'm fine.
+século|Isto tem um século.|This is a century old.
+constituir|O grupo é constituído por 4 pessoas.|The group is made up of 4 people.
+logo|Até logo!|See you later!
+abrir|A que horas abre?|What time does it open?
+embora|Vou-me embora.|I'm off.
+quanto|Quanto é?|How much is it?
+história|Conta-me uma história.|Tell me a story.
+conta|Queria a conta.|I'd like the bill.
+mostrar|Mostra-me a tua casa.|Show me your house.
+ganhar|Quem ganhou o jogo?|Who won the match?
+acordo|Estou de acordo.|I agree.
+achar|Acho que sim.|I think so.
+corpo|A água é boa para o corpo.|Water is good for the body.
+entanto|No entanto, não posso ir.|However, I can't go.
+gabinete|Ela está no gabinete.|She's in the office.
+cinco|Volto daqui a cinco dias.|I'll be back in five days.
+ação|Agora é hora de ação.|Now it's time for action.
+esperar|Espera um momento!|Wait a moment!
+tanto|Gosto tanto de Lisboa!|I like Lisbon so much!
+estado|Em que estado está a casa?|What state is the house in?
+frente|A escola fica em frente da casa.|The school is opposite the house.
+passado|No ano passado estive no Porto.|Last year I was in Porto.
+trabalhar|Onde é que trabalhas?|Where do you work?
+pedir|Posso pedir uma coisa?|Can I ask for something?
+realizar|O jogo vai realizar-se no Porto.|The match will take place in Porto.
+porta|Abre a porta!|Open the door!
+principal|Qual é o problema principal?|What's the main problem?
+mercado|Vou ao mercado.|I'm going to the market.
+utilizar|Posso utilizar isto?|Can I use this?
+sentido|Isso não faz sentido.|That doesn't make sense.
+razão|Tens razão.|You're right.
+económico|É um problema económico.|It's an economic problem.
+pesquisa|Fiz uma pesquisa sobre isso.|I did some research on that.
+medida|Temos de tomar medidas.|We have to take measures.
+final|No final, ganhámos.|In the end, we won.
+próprio|Ela tem a sua própria casa.|She has her own house.
+desenvolvimento|O desenvolvimento da região é importante.|The region's development is important.
+papel|Tens papel?|Do you have any paper?
+servir|Para que serve isto?|What's this for?
+ideia|Não faço ideia.|I have no idea.
+atividade|Há muitas atividades para fazer aqui.|There are lots of activities to do here.
+único|É a única coisa que quero.|It's the only thing I want.
+cabeça|Não sei onde tenho a cabeça!|I don't know where my head is!
+alto|Ele é muito alto.|He's very tall.
+portanto|Não tenho tempo, portanto não vou.|I don't have time, so I'm not going.
+mal|Não faz mal.|Never mind.
+cento|Estou 100 por cento de acordo.|I agree 100 percent.
+taxa|Há uma taxa de 5 euros.|There's a 5-euro fee.
+escrever|Como se escreve isso?|How do you spell that?
+necessário|Não é necessário.|It's not necessary.
+representar|Ela representa a empresa.|She represents the company.
+morte|A morte faz parte da vida.|Death is part of life.
+população|Qual é a população de Lisboa?|What's the population of Lisbon?
+volta|Vou dar uma volta.|I'm going for a walk.
+causa|Por causa do trabalho, não posso ir.|Because of work, I can't go.
+sob|A cidade ficou sob a água.|The city ended up under water.
+ninguém|Não está ninguém em casa.|There's nobody home.
+mãe|A minha mãe é de Faro.|My mother is from Faro.
+maneira|Faz à tua maneira.|Do it your way.
+velho|A casa é muito velha.|The house is very old.
+ler|Gosto de ler.|I like reading.
+tentar|Vou tentar.|I'll try.
+pagar|Quanto é que tenho de pagar?|How much do I have to pay?
+lei|É a lei.|It's the law.
+verdade|É verdade?|Is that true?
+termo|Não conheço esse termo.|I don't know that term.
+ar|O ar aqui é muito bom.|The air here is very good.
+aparecer|Aparece lá em casa!|Come round to my place!
+pé|Vou a pé.|I'm going on foot.
+campo|Gosto de viver no campo.|I like living in the countryside.
+após|Após o jogo, vamos para casa.|After the match, we're going home.
+cair|Ela caiu em casa.|She fell at home.
+informação|Onde posso encontrar mais informação?|Where can I find more information?
+amigo|Ele é o meu melhor amigo.|He's my best friend.
+livro|Estou a ler um livro muito bom.|I'm reading a very good book.
+ministro|O primeiro-ministro está em Lisboa.|The prime minister is in Lisbon.
+efeito|Teve um bom efeito.|It had a good effect.
+correr|Corro todos os dias.|I run every day.
+fundo|Ao fundo, à direita.|At the end, on the right.
+colocar|Onde coloco isto?|Where do I put this?
+morrer|O pai dela morreu no ano passado.|Her father died last year.
+linha|Qual é a linha para o Porto?|Which line goes to Porto?
+ordem|Está tudo em ordem.|Everything's in order.
+surgir|Surgiu um problema.|A problem came up.
+lembrar|Não me lembro.|I don't remember.
+trazer|Podes trazer água?|Can you bring some water?
+produto|É um produto português.|It's a Portuguese product.
+construção|A casa está em construção.|The house is under construction.
+rua|Em que rua vives?|What street do you live on?
+prever|Não é possível prever isso.|It's not possible to predict that.
+procurar|Procuro uma casa no centro.|I'm looking for a house in the centre.
+vários|Estive lá várias vezes.|I've been there several times.
+atingir|A população atingiu 10 milhões.|The population reached 10 million.
+vista|A casa tem vista para o mar.|The house has a sea view.
+explicar|Podes explicar outra vez?|Can you explain again?
+idade|Que idade tens?|How old are you?
+centro|Vivo no centro da cidade.|I live in the city centre.
+posição|Qual é a posição da equipa?|What position is the team in?
+verificar|Vou verificar.|I'll check.
+base|Isso é a base de tudo.|That's the basis of everything.
+fase|É só uma fase.|It's just a phase.
+estudo|Um novo estudo diz isso.|A new study says so.
+guerra|A guerra acabou.|The war is over.
+programa|Qual é o programa para hoje?|What's the plan for today?
+mar|Gosto muito do mar.|I really like the sea.
+início|No início, não falava português.|At first, I didn't speak Portuguese.
+elemento|É um elemento importante.|It's an important element.
+humano|É um ser humano.|It's a human being.
+objetivo|O meu objetivo é falar português.|My goal is to speak Portuguese.
+partido|Qual é o partido do presidente?|What's the president's party?
+marcar|Vou marcar uma hora.|I'm going to book an appointment.
+caminho|Qual é o caminho para o centro?|What's the way to the centre?
+figura|Ele é uma figura importante.|He's an important figure.
+produção|A produção é toda portuguesa.|The production is all Portuguese.
+dinheiro|Não tenho dinheiro.|I don't have any money.
+junto|Vamos juntos?|Shall we go together?
+tarde|Boa tarde! Tudo bem?|Good afternoon! All good?
+atual|Qual é a situação atual?|What's the current situation?
+encontro|Temos um encontro às 3.|We have a meeting at 3.
+apoio|Ela tem o apoio da família.|She has her family's support.
+falta|Lisboa faz-me falta.|I miss Lisbon.
+dezembro|O Natal é em dezembro.|Christmas is in December.
+necessidade|Não há necessidade.|There's no need.
+voz|Fala mais alto, não ouço a tua voz.|Speak up, I can't hear your voice.
+obter|Onde posso obter informação?|Where can I get information?
+forte|Ele é muito forte.|He's very strong.
+sobretudo|Gosto de tudo, sobretudo do mar.|I like everything, especially the sea.
+capital|Lisboa é a capital de Portugal.|Lisbon is the capital of Portugal.
+conjunto|Fizemos isto em conjunto.|We did this together.
+responder|Ela não responde.|She isn't answering.
+luz|Não há luz em casa.|There's no electricity at home.
+cá|Anda cá!|Come here!
+jovem|Ele ainda é muito jovem.|He's still very young.
+pretender|O que pretendes fazer?|What do you intend to do?
+europeu|Portugal é um país europeu.|Portugal is a European country.
+anterior|Na semana anterior, estive no Porto.|The week before, I was in Porto.
+incluir|Está tudo incluído?|Is everything included?
+fonte|Qual é a fonte dessa informação?|What's the source of that information?
+defender|Ela defende sempre os amigos.|She always stands up for her friends.
+minuto|Espera cinco minutos.|Wait five minutes.
+interesse|Não tenho interesse.|I'm not interested.
+médico|Tenho de ir ao médico.|I have to go to the doctor.
+garantir|Garanto que é verdade.|I guarantee it's true.
+ligar|Liga-me depois.|Call me later.
+povo|O povo português tem uma cultura muito antiga.|The Portuguese people have a very old culture.
+difícil|O português é difícil?|Is Portuguese difficult?
+geral|Em geral, estou bem.|In general, I'm fine.
+seguinte|No dia seguinte, voltei.|The next day, I came back.
+usar|Não uso isso.|I don't use that.
+aumentar|Os preços aumentaram muito.|Prices have gone up a lot.
+princípio|No princípio, foi difícil.|At the beginning, it was difficult.
+responsável|Quem é o responsável?|Who's in charge?
+qualidade|É um produto de qualidade.|It's a quality product.
+manhã|Trabalho de manhã.|I work in the morning.
+seis|Saio de casa às seis.|I leave home at six.
+concelho|Vivo no concelho de Sintra.|I live in the municipality of Sintra.
+preço|Qual é o preço?|What's the price?
+setor|Trabalho no setor público.|I work in the public sector.
+decisão|É uma decisão difícil.|It's a difficult decision.
+época|É a melhor época do ano.|It's the best time of year.
+candidato|Quem é o candidato do partido?|Who's the party's candidate?
+acompanhar|Posso acompanhar-te a casa?|Can I walk you home?
+direção|Em que direção fica o centro?|Which way is the centre?
+médio|O meu português é de nível médio.|My Portuguese is intermediate level.
+movimento|Há muito movimento na rua.|There's a lot going on in the street.
+revelar|Ela não quer revelar o nome.|She doesn't want to reveal the name.
+jogador|Ele é o melhor jogador da equipa.|He's the best player on the team.
+amor|Bom dia, meu amor!|Good morning, my love!
+mau|O tempo está mau.|The weather is bad.
+opinião|Qual é a tua opinião?|What's your opinion?
+membro|Ela é membro do partido.|She's a member of the party.
+prova|Não há provas.|There's no proof.
+maioria|A maioria das pessoas vive na cidade.|Most people live in the city.
+janeiro|Faço anos em janeiro.|My birthday is in January.
+criação|A criação da empresa foi em 2010.|The company was founded in 2010.
+aspeto|Tem bom aspeto!|It looks good!
+provocar|Isso pode provocar problemas.|That could cause problems.
+decidir|Ainda não decidi.|I haven't decided yet.
+função|Qual é a função disto?|What's this for?
+lançar|A empresa vai lançar um novo produto.|The company is going to launch a new product.
+preciso|É preciso ir agora.|We need to go now.
+tirar|Tira isso daqui!|Get that out of here!
+vitória|Foi uma grande vitória.|It was a great victory.
+subir|Os preços estão a subir.|Prices are going up.
+professor|A minha professora é de Lisboa.|My teacher is from Lisbon.
+formação|Ela tem formação em economia.|She has a background in economics.
+cima|O livro está lá em cima.|The book is upstairs.
+estabelecer|Vamos estabelecer um plano.|Let's set up a plan.
+resolver|Vamos resolver isso.|Let's sort that out.
+desenvolver|A empresa quer desenvolver novos produtos.|The company wants to develop new products.
+sala|Estão todos na sala.|Everyone is in the living room.
+levantar|Tenho de levantar dinheiro.|I need to withdraw some money.
+perguntar|Posso perguntar uma coisa?|Can I ask something?
+plano|Qual é o plano?|What's the plan?
+construir|Vão construir uma escola nova.|They're going to build a new school.
+doença|Ninguém sabe que doença ele tem.|Nobody knows what illness he has.
+entrada|Onde é a entrada?|Where's the entrance?
+clube|Qual é o teu clube?|Which club do you support?
+sofrer|Ele sofre muito com isso.|He suffers a lot because of it.
+claro|Claro que sim!|Of course!
+preparar|Estou a preparar tudo.|I'm getting everything ready.
+porém|Quero ir, porém não posso.|I want to go; however, I can't.
+proposta|Tenho uma proposta para ti.|I have a proposal for you.
+rio|O rio Tejo passa por Lisboa.|The Tagus river flows through Lisbon.
+precisar|Precisas de alguma coisa?|Do you need anything?
+nascer|Nasci em Lisboa.|I was born in Lisbon.
+dez|Volto em dez minutos.|I'll be back in ten minutes.
+prazo|Qual é o prazo?|What's the deadline?
+entender|Não entendo.|I don't understand.
+organização|Ela trabalha numa organização internacional.|She works for an international organisation.
+bater|Está a bater à porta.|Someone's knocking at the door.
+espécie|É uma espécie de jogo.|It's a kind of game.
+texto|Lê este texto.|Read this text.
+branco|A casa é branca.|The house is white.
+carro|Vamos de carro.|We're going by car.
+origem|Qual é a origem desta palavra?|What's the origin of this word?
+arte|Gosto muito de arte.|I really like art.
+natural|Ela é natural do Porto.|She's a native of Porto.
+aceitar|Não posso aceitar isso.|I can't accept that.
+obrigar|Ninguém te obriga.|Nobody's forcing you.
+estrutura|A estrutura da casa é antiga.|The structure of the house is old.
+anunciar|O presidente vai anunciar a decisão.|The president is going to announce the decision.
+pedra|A casa é de pedra.|The house is made of stone.
+bastante|Tenho bastante tempo.|I have plenty of time.
+presença|A tua presença é importante.|Your presence is important.
+esquecer|Não te esqueças!|Don't forget!
+dúvida|Tenho uma dúvida.|I have a question.
+superior|Fica no andar superior.|It's on the upper floor.
+terceiro|Vivo no terceiro andar.|I live on the third floor.
+quarto|O meu quarto é pequeno.|My bedroom is small.
+registar|Tens de te registar na página.|You have to register on the page.
+mudar|Vou mudar de casa.|I'm moving house.
+mandar|Manda-me o texto.|Send me the text.
+acrescentar|Queres acrescentar alguma coisa?|Do you want to add anything?
+assumir|Ela vai assumir a direção da empresa.|She's going to take over the management of the company.
+cor|De que cor é o carro?|What colour is the car?
+aumento|Pedi um aumento.|I asked for a raise.
+via|Está na via da direita.|It's in the right-hand lane.
+longe|É longe daqui?|Is it far from here?
+outubro|Vou a Lisboa em outubro.|I'm going to Lisbon in October.
+cujo|É o homem cujo filho joga no Benfica.|He's the man whose son plays for Benfica.
+filme|Vamos ver um filme?|Shall we watch a film?
+quadro|Escreve no quadro.|Write on the board.
+eleição|As eleições são em outubro.|The elections are in October.
+futuro|No futuro, quero viver em Portugal.|In the future, I want to live in Portugal.
+metro|Vou de metro.|I'm going by metro.

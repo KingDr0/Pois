@@ -2,8 +2,8 @@
    Every release bumps VERSION. When the app opens (or comes back to the foreground) it asks the
    browser to re-check this file; a changed VERSION installs a fresh copy of the app, which then
    takes over and the page reloads itself. */
-const VERSION = "pois-2026-11-20k";
-const SHELL = ["./", "index.html", "style.css", "config.js", "cloud.js", "content.js", "app.js", "manifest.webmanifest",
+const VERSION = "pois-2026-11-20l";
+const SHELL = ["./", "index.html", "style.css", "config.js", "cloud.js", "content.js", "words.js", "app.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/favicon.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

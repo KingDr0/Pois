@@ -1,0 +1,665 @@
+# Top European Portuguese words, in corpus frequency order.
+# Source: CLUL Multifunctional Computational Lexicon of Contemporary Portuguese (16.2M words, European Portuguese).
+# Duplicate lemmas across word classes merged at their first rank; feminine/object forms merged into the base word.
+# Removed: abbreviations, single letters, website boilerplate (copyright, email, página-index terms) and lemmatisation glitches.
+# Spelling updated to the 1990 agreement as used in Portugal (projeto, ação, atual…).
+# pt | type | corpus count | English | also (forms shown with it)
+de|prep|1454101|of, from|
+o|art|1148986|the (masculine); it, him|os
+a|art|1081344|the (feminine); to; her|as
+em|prep|490549|in, on, at|
+e|conj|434925|and|
+ser|verb|333747|to be (permanent)|
+que|pron|250716|that, which, what|
+por|prep|174329|by, for, through|
+um|art|157828|a, one|uma
+para|prep|153883|for, to, in order to|
+com|prep|137880|with|
+não|adv|131826|no, not|
+ter|verb|117212|to have|
+se|pron|76003|oneself; if|si
+mais|adv|68436|more, most|
+estar|verb|65520|to be (temporary)|
+como|conj|62474|how, as, like|
+mas|conj|55588|but|
+ou|conj|51034|or|
+fazer|verb|47273|to do, to make|
+ir|verb|45510|to go|
+seu|pron|44222|his, her, their, your (polite)|sua
+haver|verb|42560|there to be (há = there is)|
+poder|verb|42138|can, to be able to|
+este|pron|40681|this|esta
+dizer|verb|39890|to say, to tell|
+ano|noun|36764|year|
+já|adv|35541|already, now|
+ele|pron|31193|he, it|eles
+muito|adv|28404|very, a lot, much|muita
+primeiro|num|28393|first|primeira
+todo|pron|28257|all, every, whole|toda
+eu|pron|27892|I|mim
+também|adv|27763|also, too|
+dar|verb|27265|to give|
+dois|num|26564|two|duas
+ainda|adv|26128|still, yet|
+outro|pron|26075|other, another|outra
+entre|prep|25655|between, among|
+vez|noun|23535|time (occasion)|
+ver|verb|23316|to see|
+local|noun|22214|place, local|
+dever|verb|22034|must, should; to owe|
+dia|noun|21896|day|
+sobre|prep|21893|about, on|
+depois|adv|21772|after, afterwards|
+até|prep|21725|until, up to; even|
+saber|verb|21639|to know (facts)|
+só|adv|21097|only, just; alone|
+sem|prep|20764|without|
+querer|verb|20593|to want|
+grande|adj|20517|big, great|
+quando|conj|20137|when|
+isso|pron|19657|that (thing)|
+página|noun|19173|page|
+onde|pron|18511|where|
+político|adj|18330|political; politician|
+ela|pron|18207|she, it|elas
+novo|adj|18113|new, young|nova
+ficar|verb|18031|to stay; to be located; to become|
+vir|verb|17884|to come|
+tempo|noun|17878|time; weather|
+último|adj|17844|last, latest|
+porque|conj|16488|because|
+bem|adv|16224|well, fine|
+passar|verb|15936|to pass; to spend (time)|
+me|pron|15822|me, myself|
+tudo|pron|15482|everything|
+sempre|adv|14837|always|
+esse|pron|14799|that|essa
+coisa|noun|14657|thing|
+agora|adv|14443|now|
+pessoa|noun|14421|person|
+homem|noun|14031|man|
+parte|noun|14010|part|
+cultura|noun|13809|culture|
+espaço|noun|13522|space|
+vida|noun|13495|life|
+lhe|pron|13451|(to) him, her, you|lhes
+sociedade|noun|13184|society|
+deixar|verb|12979|to leave; to let|
+quem|pron|12978|who|
+encontrar|verb|12785|to find; to meet|
+país|noun|12737|country|
+casa|noun|12731|house, home|
+hoje|adv|12443|today|
+internacional|adj|12351|international|
+nem|conj|12145|nor, not even|
+forma|noun|12123|form, shape, way|
+chegar|verb|12042|to arrive|
+aqui|adv|11903|here|
+trabalho|noun|11675|work, job|
+economia|noun|11607|economy|
+mesmo|adv|11571|same; even; really|mesma
+três|num|11545|three|
+algum|pron|11504|some, any|alguma
+política|noun|11455|politics, policy|
+qual|pron|11247|which, what|
+qualquer|pron|11236|any|
+caso|noun|11160|case|
+meu|pron|11082|my, mine|minha
+nós|pron|11030|we, us|nos
+aquele|pron|10981|that (over there)|aquela
+desporto|noun|10871|sport|
+público|noun|10815|public, audience|
+hora|noun|10776|hour|
+cada|pron|10689|each, every|
+apenas|adv|10664|only, just|
+direito|noun|10541|right; law|
+então|adv|10498|then, so|
+lado|noun|10288|side|
+bom|adj|10285|good|boa
+português|adj|10269|Portuguese|portuguesa
+durante|prep|10209|during|
+falar|verb|10202|to speak, to talk|
+mulher|noun|10168|woman; wife|
+levar|verb|10145|to take, to carry|
+começar|verb|10132|to begin|
+parecer|verb|10094|to seem|
+isto|pron|9989|this (thing)|
+ontem|adv|9733|yesterday|
+maior|adj|9594|bigger, biggest|
+cidade|noun|9258|city|
+lá|adv|9238|there|
+tão|adv|9049|so (as in so big)|
+mil|num|8803|thousand|
+jornal|noun|8800|newspaper|
+desde|prep|8788|since|
+contra|prep|8754|against|
+nada|pron|8740|nothing|
+educação|noun|8606|education|
+considerar|verb|8509|to consider|
+nunca|adv|8493|never|
+continuar|verb|8488|to continue|
+presidente|noun|8485|president|
+assim|adv|8443|like this, so|
+apresentar|verb|8422|to present, to introduce|
+água|noun|8340|water|
+conhecer|verb|8329|to know (people, places)|
+escola|noun|8296|school|
+tal|pron|8184|such|
+pensar|verb|8140|to think|
+grupo|noun|8138|group|
+problema|noun|8050|problem|
+conto|noun|8044|short story|
+ponto|noun|7998|point; stop|
+conseguir|verb|7872|to manage to|
+mão|noun|7806|hand|
+noite|noun|7790|night|
+mundo|noun|7765|world|
+exemplo|noun|7761|example|
+empresa|noun|7752|company|
+facto|noun|7722|fact|
+quase|adv|7698|almost|
+valor|noun|7691|value|
+pequeno|adj|7667|small|pequena
+partir|verb|7650|to leave; to break|
+lugar|noun|7645|place|
+filho|noun|7644|son; child|filha
+segundo|num|7639|second; according to|segunda
+antes|adv|7623|before|
+pôr|verb|7613|to put|
+fim|noun|7560|end|
+acabar|verb|7532|to finish|
+obra|noun|7529|work (of art); building works|
+chamar|verb|7518|to call|
+jogo|noun|7416|game, match|
+número|noun|7406|number|
+existir|verb|7303|to exist|
+sentir|verb|7271|to feel|
+relação|noun|7221|relationship|
+tornar|verb|7182|to become; to make|
+viver|verb|7163|to live|
+meio|noun|7157|middle; half; means|
+região|noun|7154|region|
+senhor|noun|7139|sir, gentleman; Mr|senhora
+situação|noun|7129|situation|
+processo|noun|7110|process|
+referir|verb|7061|to mention|
+além|adv|7007|beyond; as well as|
+entrar|verb|6931|to enter, to go in|
+gente|noun|6927|people (a gente = we)|
+ciência|noun|6914|science|
+milhão|num|6875|million|
+mês|noun|6862|month|
+social|adj|6858|social|
+artigo|noun|6837|article|
+enquanto|conj|6837|while|
+nosso|pron|6672|our, ours|nossa
+sair|verb|6656|to go out, to leave|
+aí|adv|6642|there (near you)|
+terra|noun|6585|land, earth; home town|
+voltar|verb|6565|to come back|
+ali|adv|6483|over there|
+pois|conj|6483|well, right, indeed|
+seguir|verb|6482|to follow|
+serviço|noun|6474|service|
+ouvir|verb|6448|to hear, to listen|
+criar|verb|6439|to create; to raise|
+nome|noun|6353|name|
+manter|verb|6301|to keep|
+gostar|verb|6243|to like|
+tipo|noun|6230|type, kind|
+melhor|adj|6214|better, best|
+longo|adj|6170|long|longa
+semana|noun|6141|week|
+equipa|noun|6138|team|
+período|noun|6109|period|
+quatro|num|6108|four|
+nível|noun|6051|level|
+permitir|verb|6046|to allow|
+olho|noun|6030|eye|
+área|noun|5972|area|
+projeto|noun|5962|project|
+importante|adj|5960|important|
+menos|adv|5946|less, least|
+pai|noun|5932|father|
+andar|verb|5919|to walk; to go around|
+sim|adv|5909|yes|
+através|adv|5867|through|
+zona|noun|5843|area, zone|
+imagem|noun|5822|image, picture|
+momento|noun|5817|moment|
+dentro|adv|5790|inside|
+tratar|verb|5774|to deal with; to treat|
+diferente|adj|5764|different|
+resultado|noun|5745|result|
+palavra|noun|5742|word|
+perder|verb|5741|to lose; to miss|
+próximo|adj|5716|next; near|próxima
+sistema|noun|5690|system|
+receber|verb|5682|to receive|
+criança|noun|5652|child|
+tomar|verb|5624|to take; to have (a drink)|
+altura|noun|5623|height; time, moment|
+modo|noun|5619|way, manner|
+olhar|verb|5595|to look|
+nacional|adj|5562|national|
+contar|verb|5521|to count; to tell|
+acontecer|verb|5519|to happen|
+antigo|adj|5484|old, former|antiga
+afirmar|verb|5451|to state, to claim|
+família|noun|5442|family|
+possível|adj|5427|possible|
+questão|noun|5391|question, issue|
+aquilo|pron|5383|that (thing over there)|
+força|noun|5356|strength, force|
+canal|noun|5339|channel|
+condição|noun|5321|condition|
+pouco|adv|5320|little, not much|pouca
+talvez|adv|5316|maybe|
+apesar|prep|5290|despite (apesar de)|
+século|noun|5289|century|
+constituir|verb|5288|to make up|
+logo|adv|5283|soon; right away; so|
+abrir|verb|5271|to open|
+embora|conj|5266|although; away|
+quanto|adv|5258|how much|
+história|noun|5251|history; story|
+conta|noun|5193|bill; account|
+mostrar|verb|5186|to show|
+ganhar|verb|5183|to win; to earn|
+acordo|noun|5182|agreement|
+achar|verb|5181|to think (opinion); to find|
+corpo|noun|5167|body|
+entanto|conj|5159|however (no entanto)|
+gabinete|noun|5084|office|
+cinco|num|5072|five|
+ação|noun|5062|action|
+esperar|verb|5057|to wait; to hope|
+tanto|adv|5052|so much|tanta
+estado|noun|5050|state|
+frente|noun|5050|front|
+passado|adj|5016|past, last|
+trabalhar|verb|4986|to work|
+pedir|verb|4953|to ask for, to order|
+realizar|verb|4951|to carry out|
+porta|noun|4921|door|
+principal|adj|4902|main|
+mercado|noun|4890|market|
+utilizar|verb|4887|to use|
+sentido|noun|4856|sense; direction|
+razão|noun|4846|reason|
+económico|adj|4798|economic|
+pesquisa|noun|4787|research, search|
+medida|noun|4780|measure|
+final|noun|4770|end; final|
+próprio|pron|4755|own; itself|própria
+desenvolvimento|noun|4753|development|
+papel|noun|4743|paper; role|
+servir|verb|4728|to serve|
+ideia|noun|4721|idea|
+atividade|noun|4713|activity|
+único|adj|4706|only, unique|única
+cabeça|noun|4663|head|
+alto|adj|4626|tall, high; loud|alta
+portanto|conj|4609|so, therefore|
+mal|adv|4590|badly|
+cento|noun|4555|hundred (por cento = percent)|
+taxa|noun|4539|rate; fee|
+escrever|verb|4533|to write|
+necessário|adj|4521|necessary|
+representar|verb|4520|to represent|
+morte|noun|4518|death|
+população|noun|4501|population|
+volta|noun|4461|turn; return; around|
+causa|noun|4449|cause|
+sob|prep|4445|under|
+ninguém|pron|4441|nobody|
+mãe|noun|4439|mother|
+maneira|noun|4439|way, manner|
+velho|adj|4416|old|velha
+ler|verb|4409|to read|
+tentar|verb|4403|to try|
+pagar|verb|4388|to pay|
+lei|noun|4373|law|
+verdade|noun|4338|truth|
+termo|noun|4317|term; end|
+ar|noun|4313|air|
+aparecer|verb|4309|to appear|
+pé|noun|4263|foot|
+campo|noun|4238|field; countryside|
+após|prep|4235|after|
+cair|verb|4208|to fall|
+informação|noun|4188|information|
+amigo|noun|4182|friend|amiga
+livro|noun|4182|book|
+ministro|noun|4172|minister|
+efeito|noun|4160|effect|
+correr|verb|4158|to run|
+fundo|noun|4150|bottom; fund; background|
+colocar|verb|4138|to place, to put|
+morrer|verb|4110|to die|
+linha|noun|4105|line|
+ordem|noun|4057|order|
+surgir|verb|4042|to appear, to come up|
+lembrar|verb|4033|to remember; to remind|
+trazer|verb|4000|to bring|
+produto|noun|3970|product|
+construção|noun|3961|construction|
+rua|noun|3961|street|
+prever|verb|3956|to predict|
+procurar|verb|3938|to look for|
+vários|pron|3930|several|várias
+atingir|verb|3926|to reach|
+vista|noun|3922|view; sight|
+explicar|verb|3919|to explain|
+idade|noun|3905|age|
+centro|noun|3898|centre|
+posição|noun|3875|position|
+verificar|verb|3867|to check|
+base|noun|3852|base, basis|
+fase|noun|3848|phase|
+estudo|noun|3828|study|
+guerra|noun|3806|war|
+programa|noun|3787|programme|
+mar|noun|3770|sea|
+início|noun|3764|beginning|
+elemento|noun|3759|element|
+humano|adj|3747|human|
+objetivo|noun|3745|goal|
+partido|noun|3745|(political) party|
+marcar|verb|3733|to mark; to book; to score|
+caminho|noun|3726|way, path|
+figura|noun|3711|figure|
+produção|noun|3710|production|
+dinheiro|noun|3696|money|
+junto|adv|3684|together; next to|
+tarde|noun|3666|afternoon; late|
+atual|adj|3665|current|
+encontro|noun|3657|meeting|
+apoio|noun|3636|support|
+falta|noun|3623|lack; foul|
+dezembro|noun|3619|December|
+necessidade|noun|3615|need|
+voz|noun|3614|voice|
+obter|verb|3593|to obtain|
+forte|adj|3587|strong|
+sobretudo|adv|3584|above all|
+capital|noun|3580|capital|
+conjunto|noun|3558|set, group|
+responder|verb|3557|to answer|
+luz|noun|3553|light|
+cá|adv|3551|here|
+jovem|noun|3548|young person; young|
+pretender|verb|3544|to intend|
+europeu|adj|3538|European|europeia
+anterior|adj|3507|previous|
+incluir|verb|3491|to include|
+fonte|noun|3484|source; fountain|
+defender|verb|3480|to defend|
+minuto|noun|3478|minute|
+interesse|noun|3467|interest|
+médico|noun|3443|doctor|médica
+garantir|verb|3428|to guarantee|
+ligar|verb|3421|to call (phone); to switch on|
+povo|noun|3418|people, nation|
+difícil|adj|3402|difficult|
+geral|adj|3400|general|
+seguinte|adj|3397|following|
+usar|verb|3394|to use; to wear|
+aumentar|verb|3377|to increase|
+princípio|noun|3373|beginning; principle|
+responsável|noun|3368|person in charge; responsible|
+qualidade|noun|3367|quality|
+manhã|noun|3355|morning|
+seis|num|3349|six|
+concelho|noun|3348|municipality|
+preço|noun|3345|price|
+setor|noun|3334|sector|
+decisão|noun|3331|decision|
+época|noun|3314|season; era|
+candidato|noun|3300|candidate|
+acompanhar|verb|3293|to go with; to follow|
+direção|noun|3284|direction; management|
+médio|adj|3269|average, medium|
+movimento|noun|3267|movement|
+revelar|verb|3265|to reveal|
+jogador|noun|3262|player|
+amor|noun|3237|love|
+mau|adj|3228|bad|má
+opinião|noun|3215|opinion|
+membro|noun|3202|member|
+prova|noun|3201|proof; test|
+maioria|noun|3198|majority|
+janeiro|noun|3185|January|
+criação|noun|3182|creation|
+aspeto|noun|3134|aspect; look|
+provocar|verb|3130|to cause|
+decidir|verb|3122|to decide|
+função|noun|3114|function|
+lançar|verb|3103|to throw; to launch|
+preciso|adj|3102|necessary; precise|
+tirar|verb|3101|to take out; to take (a photo)|
+vitória|noun|3099|victory|
+subir|verb|3090|to go up|
+professor|noun|3082|teacher|professora
+formação|noun|3077|training|
+cima|noun|3062|top (em cima = on top)|
+estabelecer|verb|3059|to establish|
+resolver|verb|3051|to solve|
+desenvolver|verb|3049|to develop|
+sala|noun|3040|room; living room|
+levantar|verb|3037|to lift; to withdraw (money)|
+perguntar|verb|3028|to ask (a question)|
+plano|noun|3022|plan|
+construir|verb|3020|to build|
+doença|noun|3015|illness|
+entrada|noun|3015|entrance; starter|
+clube|noun|3001|club|
+sofrer|verb|2994|to suffer|
+claro|adj|2992|clear; light; of course|clara
+preparar|verb|2991|to prepare|
+porém|conj|2990|however|
+proposta|noun|2987|proposal|
+rio|noun|2983|river|
+precisar|verb|2976|to need|
+nascer|verb|2965|to be born|
+dez|num|2964|ten|
+prazo|noun|2964|deadline|
+entender|verb|2963|to understand|
+organização|noun|2963|organisation|
+bater|verb|2958|to hit; to knock|
+espécie|noun|2955|species; kind|
+texto|noun|2953|text|
+tu|pron|2947|you (informal)|te
+branco|adj|2935|white|branca
+carro|noun|2926|car|
+origem|noun|2926|origin|
+arte|noun|2907|art|
+natural|adj|2907|natural|
+aceitar|verb|2902|to accept|
+obrigar|verb|2887|to force|
+estrutura|noun|2881|structure|
+anunciar|verb|2880|to announce|
+pedra|noun|2875|stone|
+bastante|adv|2866|quite; enough|
+presença|noun|2863|presence|
+esquecer|verb|2858|to forget|
+dúvida|noun|2850|doubt; question|
+superior|adj|2835|higher, upper|
+terceiro|num|2833|third|terceira
+quarto|noun|2829|bedroom; quarter; fourth|
+registar|verb|2826|to record, to register|
+mudar|verb|2823|to change; to move|
+mandar|verb|2821|to send; to order|
+acrescentar|verb|2819|to add|
+assumir|verb|2805|to take on|
+cor|noun|2799|colour|
+aumento|noun|2795|increase, raise|
+via|noun|2793|way, route; lane|
+longe|adv|2787|far|
+você|pron|2787|you (neutral)|vocês
+outubro|noun|2786|October|
+cujo|pron|2784|whose|cuja
+filme|noun|2776|film|
+quadro|noun|2774|painting; board; chart|
+eleição|noun|2772|election|
+futuro|noun|2770|future|
+metro|noun|2752|metre; metro|
+vencer|verb|2743|to win, to beat|
+compreender|verb|2740|to understand|
+saúde|noun|2738|health|
+cultural|adj|2728|cultural|
+resto|noun|2728|rest|
+segurança|noun|2708|safety, security|
+agosto|noun|2688|August|
+passo|noun|2681|step|
+aberto|adj|2665|open|aberta
+objeto|noun|2661|object|
+escolher|verb|2659|to choose|
+autor|noun|2655|author|
+irmão|noun|2654|brother|irmã
+título|noun|2654|title|
+futebol|noun|2652|football|
+elevado|adj|2648|high|
+capacidade|noun|2645|capacity, ability|
+comprar|verb|2641|to buy|
+investimento|noun|2640|investment|
+braço|noun|2638|arm|
+perto|adv|2637|near|
+reconhecer|verb|2636|to recognise|
+crescimento|noun|2633|growth|
+mesa|noun|2633|table|
+simples|adj|2633|simple|
+resposta|noun|2630|answer|
+juntar|verb|2617|to join, to gather|
+líder|noun|2616|leader|
+fora|adv|2607|outside|
+experiência|noun|2604|experience|
+vender|verb|2597|to sell|
+carta|noun|2596|letter; menu card|
+importância|noun|2596|importance|
+dificuldade|noun|2589|difficulty|
+energia|noun|2588|energy|
+envolver|verb|2584|to involve|
+especial|adj|2577|special|
+estação|noun|2569|station; season|
+rede|noun|2558|network; net|
+baixo|adj|2557|low; short|baixa
+comer|verb|2557|to eat|
+certo|pron|2555|certain; right|certa
+terreno|noun|2553|land, ground|
+conhecimento|noun|2547|knowledge|
+concluir|verb|2540|to conclude|
+dirigir|verb|2540|to direct; to drive|
+sete|num|2538|seven|
+curso|noun|2537|course|
+aliás|adv|2534|in fact; by the way|
+perceber|verb|2527|to understand, to get|
+instituição|noun|2522|institution|
+acusar|verb|2517|to accuse|
+curto|adj|2516|short|curta
+peça|noun|2512|piece; play|
+série|noun|2509|series|
+defesa|noun|2499|defence|
+terminar|verb|2496|to finish|
+música|noun|2491|music|
+novembro|noun|2491|November|
+iniciar|verb|2490|to begin|
+jogar|verb|2489|to play (a game)|
+financeiro|adj|2487|financial|
+cerca|noun|2484|about (cerca de); fence|
+transformar|verb|2484|to transform|
+possibilidade|noun|2476|possibility|
+reunião|noun|2470|meeting|
+ambos|num|2469|both|ambas
+realidade|noun|2469|reality|
+cheio|adj|2461|full|cheia
+faltar|verb|2451|to be missing|
+sinal|noun|2451|sign, signal|
+técnico|adj|2451|technical; technician|
+viagem|noun|2449|trip, journey|
+recurso|noun|2445|resource|
+cumprir|verb|2439|to fulfil|
+exigir|verb|2437|to demand|
+governo|noun|2437|government|
+fechar|verb|2432|to close|
+característica|noun|2431|characteristic|
+apontar|verb|2427|to point; to note down|
+comunicação|noun|2426|communication|
+lista|noun|2423|list|
+evitar|verb|2421|to avoid|
+existência|noun|2419|existence|
+nenhum|pron|2416|no, none|nenhuma
+indivíduo|noun|2410|individual|
+produzir|verb|2409|to produce|
+comum|adj|2402|common|
+admitir|verb|2400|to admit|
+sentar|verb|2393|to sit|
+oferecer|verb|2392|to offer|
+solução|noun|2392|solution|
+respeito|noun|2384|respect|
+definir|verb|2378|to define|
+risco|noun|2377|risk|
+rapaz|noun|2375|boy|
+bocado|noun|2373|bit, piece|
+ajudar|verb|2369|to help|
+contrário|noun|2369|opposite|
+indicar|verb|2367|to indicate|
+presente|adj|2364|present|
+atenção|noun|2363|attention|
+instalação|noun|2361|installation; facility|
+parar|verb|2359|to stop|
+acreditar|verb|2358|to believe|
+iniciativa|noun|2353|initiative|
+tema|noun|2344|topic|
+descobrir|verb|2339|to discover, to find out|
+medo|noun|2331|fear|
+recordar|verb|2325|to remember|
+situar|verb|2325|to locate|
+material|noun|2324|material|
+menino|noun|2321|little boy|menina
+capaz|adj|2320|capable|
+vinho|noun|2320|wine|
+verdadeiro|adj|2308|true, real|
+ocupar|verb|2305|to occupy|
+animal|noun|2302|animal|
+fator|noun|2300|factor|
+campanha|noun|2298|campaign|
+amanhã|adv|2293|tomorrow|
+golo|noun|2292|goal (football)|
+natureza|noun|2291|nature|
+descer|verb|2290|to go down|
+operação|noun|2290|operation|
+meter|verb|2288|to put in|
+unidade|noun|2287|unit|
+integrar|verb|2285|to be part of; to integrate|
+participar|verb|2279|to take part|
+aplicar|verb|2272|to apply|
+entretanto|adv|2271|meanwhile|
+visita|noun|2269|visit|
+decorrer|verb|2267|to take place|
+ilha|noun|2263|island|
+trabalhador|noun|2254|worker|
+matar|verb|2249|to kill|
+norte|noun|2249|north|
+fácil|adj|2246|easy|
+alteração|noun|2237|change|
+livre|adj|2232|free|
+atrás|adv|2230|behind; ago|
+estudar|verb|2229|to study|
+sul|noun|2224|south|
+edifício|noun|2221|building|
+coração|noun|2213|heart|
+modelo|noun|2211|model|
+festa|noun|2204|party|
+emprego|noun|2200|job|
+observar|verb|2200|to observe|
+igual|adj|2197|equal, the same|
+pressão|noun|2197|pressure|
+ligação|noun|2196|connection|
+assunto|noun|2194|subject, matter|
+valer|verb|2194|to be worth|
+aproveitar|verb|2193|to make the most of|
+pobre|adj|2192|poor|
+realmente|adv|2191|really|
+entregar|verb|2188|to deliver, to hand in|
+regressar|verb|2188|to return|

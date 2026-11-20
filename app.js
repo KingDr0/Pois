@@ -11,6 +11,7 @@ const ICON = {
   review: svg('<rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/>'),
   chat: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>'),
   verbs: svg('<path d="M4 7h10M4 12h16M4 17h8"/><circle cx="19" cy="7" r="2"/>'),
+  library: svg('<rect x="3" y="4" width="4" height="16" rx="1"/><rect x="9" y="4" width="4" height="16" rx="1"/><path d="m15 5.2 3.9-1 3.6 14.6-3.9 1z"/>'),
   more: svg('<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'),
   flame: svg('<path d="M12 22c4 0 7-3 7-7 0-4-3-6-4-10-2 2-3 4-3 6-1-1-2-2-2-4-3 3-5 5-5 8 0 4 3 7 7 7z"/>'),
   bolt: svg('<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>'),
@@ -35,14 +36,14 @@ WOTD.forEach((w, i) => {
   ITEMS[`wd:${i}`] = { pt: w.pt, en: w.en, alt: w.alt, tip: w.note, key: `wd:${i}`, unit: "wotd", kind: "w" };
   w.ex.forEach((e, j) => { ITEMS[`wd:${i}:e${j}`] = { pt: e[0], en: e[1], form: e[2], key: `wd:${i}:e${j}`, unit: "wotd", kind: "p" }; });
 });
-const unitById = id => UNITS.find(u => u.id === id);
+const unitById = id => UNITS.find(u => u.id === id) || LADDER_UNITS.find(u => u.id === id);
 const unitKeys = id => Object.keys(ITEMS).filter(k => ITEMS[k].unit === id);
 const getItem = k => ITEMS[k] || (S.custom[k] ? { ...S.custom[k], key: k, unit: "custom", kind: "p" } : null);
 
 /* ---------- State & persistence ---------- */
 const LS_KEY = "pois.ptpt.v1";
 function freshState() {
-  return { v: 1, updated: 0, xp: 0, days: {}, streak: 0, last: "", freezes: 0, units: {}, cards: {}, mistakes: {}, custom: {}, gen: [], vm: {}, wotdSeen: "", wotdDone: {}, mine: {},
+  return { v: 1, updated: 0, xp: 0, days: {}, streak: 0, last: "", freezes: 0, units: {}, cards: {}, mistakes: {}, custom: {}, gen: [], vm: {}, wotdSeen: "", wotdDone: {}, mine: {}, words: {}, badges: {}, libVisit: 0, wpick: null,
     stats: { ans: 0, ok: 0, lessons: 0, chats: 0, verbAns: 0, verbOk: 0 },
     settings: { goal: 30, rate: 1, voice: "", level: "A1", autoplay: true, dir: "mix", vrange: 25, vmode: "order" } };
 }
@@ -50,7 +51,7 @@ function normalize(s) {
   const f = freshState();
   s = s && typeof s === "object" ? s : {};
   return { ...f, ...s, stats: { ...f.stats, ...(s.stats || {}) }, settings: { ...f.settings, ...(s.settings || {}) },
-    units: s.units || {}, cards: s.cards || {}, mistakes: s.mistakes || {}, custom: s.custom || {}, days: s.days || {}, gen: Array.isArray(s.gen) ? s.gen : [], vm: s.vm || {}, wotdDone: s.wotdDone || {}, mine: s.mine || {} };
+    units: s.units || {}, cards: s.cards || {}, mistakes: s.mistakes || {}, custom: s.custom || {}, days: s.days || {}, gen: Array.isArray(s.gen) ? s.gen : [], vm: s.vm || {}, wotdDone: s.wotdDone || {}, mine: s.mine || {}, words: s.words || {}, badges: s.badges || {} };
 }
 let S = freshState();
 try { const raw = localStorage.getItem(LS_KEY); if (raw) S = normalize(JSON.parse(raw)); } catch (e) {}
@@ -198,6 +199,7 @@ function recordAnswer(key, ok) {
   S.stats.ans++;
   if (ok) {
     S.stats.ok++;
+    if (LEMMA_KEY[key] != null) creditWord(LEMMA_KEY[key]);
     if (!S.cards[key] || S.cards[key].due <= Date.now()) grade(key, 2);
     if (S.mistakes[key]) { S.mistakes[key]--; if (S.mistakes[key] <= 0) delete S.mistakes[key]; }
   } else { grade(key, 0); S.mistakes[key] = 2; }
@@ -234,6 +236,68 @@ function checkPT(input, accepted) {
   return { ok: false };
 }
 const similarity = (a, b) => { a = strip(a); b = strip(b); const L = Math.max(a.length, b.length) || 1; return 1 - lev(a, b) / L; };
+
+/* ---------- Word ladder & library ---------- */
+const LW = LADDER_WORDS.map(([pt, pos, en, xpt, xen, rank, alt], i) => ({ i, pt, pos, en, xpt, xen, rank, alt: alt ? alt.split(",").map(x => x.trim()) : [] }));
+const LS_ = LADDER_LESSON_SIZE, SHELF = 50;
+const LAD_N = Math.ceil(LW.length / LS_);
+const POS_LABEL = { noun: "noun", verb: "verb", adj: "adjective", adv: "adverb", pron: "pronoun", prep: "preposition", conj: "conjunction", num: "number", art: "article" };
+const LEMMA_KEY = {}, LEMMA_IDX = {}, LADDER_UNITS = [];
+LW.forEach(w => [w.pt, ...w.alt].forEach(f => { const n = norm(f); if (!(n in LEMMA_IDX)) LEMMA_IDX[n] = w.i; }));
+function clozeForm(sentence, w) {
+  const toks = sentence.replace(/[.,!?¿¡;:"«»…]/g, " ").split(/[\s]+/).filter(Boolean);
+  const forms = [w.pt, ...w.alt].map(strip);
+  let t = toks.find(x => forms.includes(strip(x)));
+  if (!t) for (const part of toks) { if (part.includes("-") && part.split("-").some(y => forms.includes(strip(y)))) { t = part.split("-").find(y => forms.includes(strip(y))); break; } }
+  if (!t && w.pt.length >= 4) { const stem = strip(w.pos === "verb" ? w.pt.slice(0, -2) : w.pt.slice(0, -1)).slice(0, 4); if (stem.length >= 3) t = toks.flatMap(x => x.split("-")).find(x => strip(x).startsWith(stem)); }
+  return t || "";
+}
+for (let k = 0; k < LAD_N; k++) {
+  const id = `lad${k}`, ws = LW.slice(k * LS_, (k + 1) * LS_);
+  ws.forEach(w => {
+    const key = `lw:${w.i}`, tip = `${POS_LABEL[w.pos] || w.pos} · #${w.rank} most common word in Portugal`;
+    ITEMS[key] = { pt: w.pt, en: w.en, alt: w.alt.length ? w.alt : undefined, tip, key, unit: id, kind: "w", lw: w.i };
+    ITEMS[key + ":e"] = { pt: w.xpt, en: w.xen, form: clozeForm(w.xpt, w), key: key + ":e", unit: id, kind: "p", lw: w.i };
+    LEMMA_KEY[key] = LEMMA_KEY[key + ":e"] = w.i;
+  });
+  LADDER_UNITS.push({ id, ladder: k, en: `Lesson ${k + 1}`, pt: ws.slice(0, 4).map(w => w.pt).join(", ") + "…", words: ws, phrases: [],
+    note: `<p>Words <b>${k * LS_ + 1}–${k * LS_ + ws.length}</b> of the most common words in European Portuguese, each with a sentence that only uses words you've already met.</p><p>A word becomes a <b>book in your library</b> once you get it right on two different days.</p>` });
+}
+/* the same word learned in a topic pack (or an old word of the day) also counts */
+Object.values(ITEMS).forEach(it => { if (it.lw == null && it.kind === "w") { const n = noArt(norm(it.pt)); if (n in LEMMA_IDX) LEMMA_KEY[it.key] = LEMMA_IDX[n]; } });
+
+const wordRec = i => S.words[LW[i].pt];
+const isLearned = i => { const r = wordRec(i); return !!(r && r[1]); };
+const isMastered = i => { const c = S.cards[`lw:${i}`]; return !!(c && c.ivl >= 21); };
+const learnedCount = () => LW.reduce((n, w) => n + (S.words[w.pt] && S.words[w.pt][1] ? 1 : 0), 0);
+function creditWord(i) {
+  const w = LW[i]; if (!w) return;
+  const r = S.words[w.pt] || (S.words[w.pt] = [0, 0]);
+  if (r[1]) return;
+  const t = today();
+  if (!r[0]) r[0] = t;
+  else if (r[0] !== t) { r[1] = Date.now(); checkMilestones(); }
+}
+function checkMilestones() {
+  const n = learnedCount();
+  LADDER_TIERS.forEach(t => { if (n >= t.n && !S.badges[t.n]) { S.badges[t.n] = today(); S.pendingBadge = t.n; } });
+}
+const currentTier = () => LADDER_TIERS.find(t => !S.badges[t.n]) || LADDER_TIERS[LADDER_TIERS.length - 1];
+const ladLevel = k => unitLevel(`lad${k}`);
+const ladLearned = k => LADDER_UNITS[k].words.filter(w => isLearned(w.i)).length;
+function nextLadder() {
+  for (let k = 0; k < LAD_N; k++) if (ladLevel(k) < 1) return k;
+  for (let k = 0; k < LAD_N; k++) if (ladLearned(k) < LADDER_UNITS[k].words.length) return k;
+  let best = 0; for (let k = 1; k < LAD_N; k++) if (ladLevel(k) < ladLevel(best)) best = k; return best;
+}
+function ladderKeys(k) {
+  const ws = LADDER_UNITS[k].words, lv = ladLevel(k);
+  const need = ws.filter(w => !isLearned(w.i)).sort((a, b) => (wordRec(b.i) ? 1 : 0) - (wordRec(a.i) ? 1 : 0));
+  const order = [...shuffle(need.filter(w => wordRec(w.i))), ...need.filter(w => !wordRec(w.i)), ...shuffle(ws.filter(w => isLearned(w.i)))];
+  const pick = order.slice(0, lv === 0 ? 8 : 6), keys = [];
+  pick.forEach((w, j) => { keys.push(`lw:${w.i}`); if (lv > 0 || j < 4) keys.push(`lw:${w.i}:e`); });
+  return keys;
+}
 
 /* ---------- Speech output: European Portuguese voices only ---------- */
 let VOICES = [], VOICE = null, VOICES_CHECKED = false, warnedVoice = false, ALL_VOICES = [], PT_SEEN = [];
@@ -530,7 +594,7 @@ function aiOffMessage() {
 const richText = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
 
 /* ---------- UI helpers ---------- */
-let TAB = ["learn", "review", "chat", "verbs", "more"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "learn";
+let TAB = ["learn", "review", "chat", "verbs", "library", "more"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "learn";
 function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3200); }
 const ACCENTS = ["á", "à", "â", "ã", "ç", "é", "ê", "í", "ó", "ô", "õ", "ú"];
 const accentBar = target => `<div class="seg" aria-label="Accented letters">${ACCENTS.map(c => `<button type="button" data-a="acc" data-c="${c}" data-target="${target}">${c}</button>`).join("")}</div>`;
@@ -566,7 +630,7 @@ function hueOf(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.char
 function closeMenu() { if (MENU_OPEN) { MENU_OPEN = false; renderTop(); } }
 function renderNav() {
   const due = dueKeys().length;
-  const tabs = [["learn", "Learn"], ["review", "Review"], ["chat", "Chat"], ["verbs", "Verbs"], ["more", "More"]];
+  const tabs = [["learn", "Learn"], ["library", "Library"], ["review", "Review"], ["chat", "Chat"], ["verbs", "Verbs"], ["more", "More"]];
   $("#nav").innerHTML = tabs.map(([id, label]) => `<button data-a="tab" data-tab="${id}" ${TAB === id ? 'aria-current="page"' : ""}>${ICON[id]}<span>${label}${id === "review" && due ? `<span class="badge">${due}</span>` : ""}</span></button>`).join("");
 }
 const INSTALL_HELP = `<details><summary>How to add a Portugal voice (free)</summary>
@@ -588,7 +652,7 @@ function voiceBanner() {
 function screenLearn() {
   const t = today(), xpToday = S.days[t] || 0, goal = S.settings.goal, pct = Math.min(1, xpToday / goal), C = 2 * Math.PI * 32;
   const due = dueKeys().length, mist = Object.keys(S.mistakes).filter(getItem).length, st = currentStreak();
-  const next = UNITS.find(u => unitLevel(u.id) < 1) || UNITS.slice().sort((a, b) => unitLevel(a.id) - unitLevel(b.id))[0];
+  const nk = nextLadder(), next = LADDER_UNITS[nk], nLearned = learnedCount(), tier = currentTier(), prevN = [0, ...LADDER_TIERS.map(t => t.n)][LADDER_TIERS.indexOf(tier)];
   return `
   ${wotdCard()}
   <section class="card goal">
@@ -606,8 +670,29 @@ function screenLearn() {
     <button data-a="mistakes" ${mist ? "" : "disabled"}><b class="num">${mist}</b>Mistakes</button>
     <button data-a="personal"><b>${ICON.bolt.replace("<svg", '<svg width="26" height="26"')}</b>Personalised</button>
   </section>
+  <button class="card ladder-card" data-a="tab" data-tab="library">
+    <div class="row" style="justify-content:space-between"><span class="kind">Word ladder · ${esc(tier.name)}</span><span class="small num"><b>${nLearned}</b> / ${tier.n} words</span></div>
+    <div class="bar" style="margin:8px 0 6px"><i style="width:${Math.min(100, 100 * (nLearned - prevN) / (tier.n - prevN))}%"></i></div>
+    <div class="row small muted" style="justify-content:space-between"><span>${S.badges[tier.n] ? "All tiers complete!" : `${tier.n - nLearned} to go for the ${esc(tier.name)} badge`}</span><span class="row" style="gap:4px">${ICON.library.replace("<svg", '<svg width="18" height="18"')} Open library</span></div>
+  </button>
   <section class="stack" style="gap:12px">
-    <h2>Beginner course (A1)</h2>
+    <h2>Word ladder: the ${LW.length} most common words</h2>
+    ${LADDER_UNITS.map((u, k) => { const lv = ladLevel(k), got = ladLearned(k); return `
+    <article class="card unit ${k === nk ? "current" : ""}">
+      <div class="tileno ${lv >= 3 ? "done" : ""}">${k + 1}</div>
+      <div>
+        <div class="row" style="justify-content:space-between"><h3>${esc(u.en)}</h3>${dots(lv)}</div>
+        <div class="muted small"><span lang="pt-PT">${esc(u.pt)}</span> · ${got}/${u.words.length} in your library</div>
+        <div class="acts">
+          <button class="btn ghost" data-a="study" data-u="${u.id}">Study</button>
+          <button class="btn" data-a="practice" data-u="${u.id}">${lv === 0 ? "Start" : lv >= 3 ? "Practise" : `Level ${lv + 1}`}</button>
+        </div>
+      </div>
+    </article>`; }).join("")}
+    <p class="muted small">Words ${LW.length + 1}–3,000 arrive in coming updates.</p>
+  </section>
+  <details class="packs"><summary><h2 style="display:inline">Topic packs (optional)</h2><div class="small muted">Greetings, food, travel and more. Words you learn here fill books in your library too.</div></summary>
+  <section class="stack" style="gap:12px;margin-top:12px">
     ${UNITS.map((u, i) => { const lv = unitLevel(u.id); return `
     <article class="card unit">
       <div class="tileno ${lv >= 3 ? "done" : ""}">${i + 1}</div>
@@ -620,8 +705,8 @@ function screenLearn() {
         </div>
       </div>
     </article>`; }).join("")}
-  </section>
-  <p class="muted small">All units are open: no locks, no hearts, no ads. Levels get harder: recognise › build › write and speak.</p>`;
+  </section></details>
+  <p class="muted small">Everything is open: no locks, no hearts, no ads. Levels get harder: recognise › build › write and speak.</p>`;
 }
 
 function screenReview() {
@@ -951,7 +1036,22 @@ function aboutScreen() {
 
 /* ================= Overlays: lesson, study, flashcards ================= */
 let L = null, ST = null, FL = null;
-function closeOverlay() { L = ST = FL = W = null; if (HAS_TTS) speechSynthesis.cancel(); $("#ov").hidden = true; $("#ov").innerHTML = ""; render(); }
+function closeOverlay() { L = ST = FL = W = null; if (HAS_TTS) speechSynthesis.cancel(); $("#ov").hidden = true; $("#ov").innerHTML = ""; render(); if (S.pendingBadge) showMilestone(); }
+function showMilestone() {
+  const n = S.pendingBadge; delete S.pendingBadge; save();
+  const t = LADDER_TIERS.find(x => x.n === n); if (!t) return;
+  const nextT = LADDER_TIERS.find(x => x.n > n);
+  const ov = $("#ov"); ov.hidden = false;
+  ov.innerHTML = `<div class="obody milestone" style="justify-content:center;align-items:center;text-align:center">
+    <div class="confetti" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => `<i style="--i:${i};left:${Math.random() * 100}%;animation-delay:${(-Math.random() * 2.6).toFixed(2)}s;animation-duration:${(2.2 + Math.random() * 1.6).toFixed(2)}s"></i>`).join("")}</div>
+    <div class="medal" aria-hidden="true">${t.badge}</div>
+    <div class="kind">Milestone · ${n.toLocaleString("en-GB")} words</div>
+    <h1 style="font-size:2rem">${esc(t.name)} achieved!</h1>
+    <p style="max-width:340px">${esc(t.blurb)}</p>
+    ${nextT ? `<p class="small muted" style="max-width:340px">Your library has grown: ${(nextT.n - n) / SHELF} new bookshelves are waiting for the next ${(nextT.n - n).toLocaleString("en-GB")} words, on the way to <b>${esc(nextT.name)}</b>.</p>` : `<p class="small muted">You've filled the whole library. Parabéns!</p>`}
+  </div>
+  <div class="ofoot"><button class="btn sun wide" data-a="libgo">Open my library</button></div>`;
+}
 
 function chooseType(it, level) {
   const words = it.pt.split(/\s+/).length;
@@ -974,7 +1074,7 @@ function startLesson(keys, opts = {}) {
   const level = opts.level ?? 0;
   const ex = makeLesson(keys, level, opts.n || 12);
   if (!ex.length) { toast("Nothing to practise yet. Start a unit first."); return; }
-  L = { ex, i: 0, opts: { ...opts, level }, first: 0, firstOk: 0, state: "ask" };
+  L = { ex, i: 0, opts: { ...opts, level }, first: 0, firstOk: 0, state: "ask", lc0: learnedCount() };
   prepEx(); renderLesson(true);
 }
 function distractors(it, field, n = 3) {
@@ -1049,6 +1149,8 @@ function renderLesson(autoplay) {
       <h1 style="font-size:2rem">Lesson complete!</h1>
       <div class="grid2" style="width:100%;max-width:360px"><div class="card"><b class="num" style="font-family:var(--display);font-size:1.8rem;color:var(--sun)">+${r.xp}</b><div class="small muted">XP</div></div><div class="card"><b class="num" style="font-family:var(--display);font-size:1.8rem">${Math.round(r.acc * 100)}%</b><div class="small muted">first-try accuracy</div></div></div>
       ${r.up ? `<div class="banner">Level up! ${esc(r.up)}</div>` : ""}
+      ${r.books > 0 ? `<div class="card newbooks">${ICON.library}<div><b>${r.books} new book${r.books > 1 ? "s" : ""}</b> for your library</div></div>` : ""}
+      ${r.note ? `<p class="small muted" style="max-width:340px">${esc(r.note)}</p>` : ""}
       <p class="muted">${r.acc === 1 ? "Perfect lesson. Bonus +5 XP." : "Every mistake goes into your review queue."}</p></div>
       <div class="ofoot"><button class="btn sun wide" data-a="close">Continue</button></div>`;
     return;
@@ -1107,12 +1209,14 @@ function finishLesson() {
   let up = "";
   if (L.opts.unit) {
     const u = S.units[L.opts.unit] || (S.units[L.opts.unit] = { level: 0 });
-    if (acc >= 0.8 && L.opts.level >= Math.min(u.level, 2) && u.level < 3) { u.level++; up = `${unitById(L.opts.unit).pt} is now level ${u.level}.`; }
+    if (acc >= 0.8 && L.opts.level >= Math.min(u.level, 2) && u.level < 3) { u.level++; { const uu = unitById(L.opts.unit); up = `${uu.ladder != null ? uu.en : uu.pt} is now level ${u.level}.`; } }
     else if (acc < 0.8) up = "";
   }
-  if (L.opts.wotd) { S.wotdDone[today()] = true; const ks = Object.keys(S.wotdDone).sort().slice(-60); const d = {}; ks.forEach(k => d[k] = true); S.wotdDone = d; up = up || "Today's word is in your review deck now."; }
+  let note = "";
+  if (L.opts.wotd) { S.wotdDone[today()] = true; const ks = Object.keys(S.wotdDone).sort().slice(-60); const d = {}; ks.forEach(k => d[k] = true); S.wotdDone = d; note = "Today's word is in your review deck. Get it right again on another day and its book joins your library."; }
   S.stats.lessons++; addXP(xp);
-  L.state = "end"; L.result = { xp, acc, up }; renderLesson();
+  const books = learnedCount() - (L.lc0 ?? learnedCount());
+  L.state = "end"; L.result = { xp, acc, up, note, books }; renderLesson();
 }
 async function explainAnswer() {
   const e = L.ex[L.i], it = e.item;
@@ -1131,9 +1235,19 @@ In 2 to 4 short sentences in English, explain what was wrong and the rule behind
 
 /* ---------- Word of the Day ---------- */
 let W = null;
-const wotdIndex = (d = new Date()) => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY) % WOTD.length;
+function wotdIndex() {
+  const t = today();
+  if (S.wpick && S.wpick.d === t && LW[S.wpick.i]) return S.wpick.i;
+  const max = Math.min(currentTier().n, LW.length);
+  const pool = LW.slice(0, max).filter(w => !isLearned(w.i));
+  const frontier = (nextLadder() + 1) * LS_;
+  const ahead = pool.filter(w => w.i >= frontier);
+  const src = ahead.length ? ahead : pool.length ? pool : LW;
+  let h = 7; for (const c of t + (USER ? USER.uid : "")) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const i = src[h % src.length].i; S.wpick = { d: t, i }; return i;
+}
 function wotdCard() {
-  const i = wotdIndex(), w = WOTD[i], done = S.wotdDone[today()];
+  const i = wotdIndex(), w = LW[i], done = S.wotdDone[today()];
   return `<button class="card wotd-card" data-a="wotd" style="text-align:left">
     <div class="row" style="justify-content:space-between"><span class="kind">Word of the day</span>${done ? `<span class="flag">PRACTISED</span>` : `<span class="chip sun small">+XP</span>`}</div>
     <div class="row" style="gap:8px;margin-top:4px"><h2 lang="pt-PT">${esc(w.pt)}</h2></div><div class="muted">${esc(w.en)}</div></button>`;
@@ -1148,7 +1262,8 @@ function openWotd(welcome) { W = { i: wotdIndex(), welcome: !!welcome, mine: "",
 const greeting = () => { const h = new Date().getHours(); const [pt, en] = h < 12 ? ["Bom dia!", "Good morning"] : h < 20 ? ["Boa tarde!", "Good afternoon"] : ["Boa noite!", "Good evening"]; return `<span lang="pt-PT">${pt}</span> <span class="praise-en">${en}</span>`; };
 function renderWotd() {
   const ov = $("#ov"); ov.hidden = false;
-  const w = WOTD[W.i], done = S.wotdDone[today()], st = currentStreak(), xpToday = S.days[today()] || 0;
+  const w = LW[W.i], done = S.wotdDone[today()], st = currentStreak(), xpToday = S.days[today()] || 0;
+  const shelfNo = Math.floor(W.i / SHELF) + 1, learned = isLearned(W.i);
   const exRow = (pt, en, form) => { const k = form ? pt.indexOf(form) : -1;
     const shown = k >= 0 ? `${esc(pt.slice(0, k))}<b class="hl">${esc(form)}</b>${esc(pt.slice(k + form.length))}` : esc(pt);
     return `<div class="row" style="align-items:flex-start">${speakBtn(pt)}<div style="flex:1"><div lang="pt-PT">${shown}</div><div class="small muted">${esc(en)}</div></div><button class="icon-btn" data-a="say" data-slow="1" data-t="${esc(pt)}" aria-label="Play slowly">${ICON.slow}</button></div>`; };
@@ -1159,13 +1274,14 @@ function renderWotd() {
       <div class="kind">Word of the day · ${new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</div>
       <div class="row"><div class="big-word" lang="pt-PT" style="flex:1">${esc(w.pt)}</div>${speakBtn(w.pt)}${speakBtn(w.pt, true)}</div>
       <div style="font-size:1.1rem">${esc(w.en)}</div>
-      ${w.alt ? `<div class="small muted">Also: <span lang="pt-PT">${w.alt.map(esc).join(", ")}</span></div>` : ""}
-      ${w.note ? `<div class="tip">${esc(w.note)}</div>` : ""}
+      ${w.alt.length ? `<div class="small muted">Also: <span lang="pt-PT">${w.alt.map(esc).join(", ")}</span></div>` : ""}
+      <div class="tip">${esc(POS_LABEL[w.pos] || w.pos)} · #${w.rank} most common word in Portugal</div>
+      <div class="small muted">${learned ? `Already a book on shelf ${shelfNo} of your library.` : `Book #${W.i + 1}, on shelf ${shelfNo} of your library. Practise it today and get it right again on another day to add it.`}</div>
     </section>
-    <section class="card stack"><h3>In a sentence</h3>${w.ex.map(e => exRow(e[0], e[1], e[2])).join("")}
+    <section class="card stack"><h3>In a sentence</h3>${exRow(w.xpt, w.xen, ITEMS[`lw:${W.i}:e`].form)}
       ${W.more.map(e => exRow(e[0], e[1])).join("")}
       ${AI ? `<button class="btn ghost" data-a="wmore" ${W.moreBusy ? "disabled" : ""}>${W.moreBusy ? "Writing…" : "More examples"}</button>` : ""}</section>
-    <button class="btn sun wide" data-a="wpractise">${done ? "Practise again" : "Practise this word · 7 exercises"}</button>
+    <button class="btn sun wide" data-a="wpractise">${done ? "Practise again" : "Practise this word · 6 exercises"}</button>
     ${AI ? `<section class="card stack"><h3>Use it yourself</h3><p class="small muted" style="margin:0">Write your own sentence with <b lang="pt-PT">${esc(w.pt)}</b>. The tutor checks it's natural Portugal Portuguese.</p>
       <div class="composer" style="position:static"><textarea id="wmine" rows="2" lang="pt-PT" placeholder="Write a sentence…" aria-label="Your sentence"></textarea>${canListen() ? `<button class="icon-btn ${W.listening ? "rec" : ""}" data-a="wmic" aria-label="${W.listening ? "Stop listening" : "Say your sentence"}">${ICON.mic}</button>` : ""}</div>
       <button class="btn" data-a="wcheck" ${W.busy ? "disabled" : ""}>${W.busy ? "Checking…" : "Check my sentence"}</button>
@@ -1178,15 +1294,14 @@ function renderWotd() {
   const t = $("#wmine"); if (t) { t.value = W.mine; t.oninput = () => { W.mine = t.value; }; }
 }
 function startWotdPractice() {
-  const i = W.i, w = ITEMS[`wd:${i}`], e = [0, 1, 2].map(j => ITEMS[`wd:${i}:e${j}`]);
+  const i = W.i, w = ITEMS[`lw:${i}`], e = ITEMS[`lw:${i}:e`];
   const ex = [
     { type: hasVoice() ? "listen" : "pt2en", item: w },
-    { type: "cloze", item: e[0] },
-    { type: "pt2en", item: e[1] },
-    { type: "cloze", item: e[2] },
-    { type: "build", item: e[1] },
+    { type: "pt2en", item: e },
+    { type: e.form ? "cloze" : hasVoice() ? "listenType" : "type", item: e.form ? e : w },
+    { type: "build", item: e },
     { type: "en2pt", item: w },
-    { type: "speak", item: e[0] }
+    { type: canListen() ? "speak" : "type", item: canListen() ? e : w }
   ];
   W = null;
   L = { ex, i: 0, opts: { level: 1, wotd: true }, first: 0, firstOk: 0, state: "ask" };
@@ -1231,8 +1346,93 @@ function renderFlash() {
   if (FL.show && !ptFirst && S.settings.autoplay) speak(it.pt);
 }
 
+
+/* ---------- Library ---------- */
+const LIB = { c: null, sel: null, fly: [] };
+function openLibrary() {
+  LIB.c = null; LIB.sel = null;
+  const since = S.libVisit || 0;
+  LIB.fly = LW.filter(w => { const r = S.words[w.pt]; return r && r[1] && r[1] > since; }).sort((a, b) => S.words[a.pt][1] - S.words[b.pt][1]).map(w => w.i);
+  LIB.firstVisit = !S.libVisit;
+  S.libVisit = Date.now(); save();
+  if (S.pendingBadge) setTimeout(() => { if (!L && !ST && !FL && !W) showMilestone(); }, LIB.fly.length ? Math.min(4000, 900 + LIB.fly.length * 90) : 300);
+}
+const SPINE_HUE = { noun: 212, verb: 4, adj: 140, adv: 268, pron: 182, prep: 328, conj: 328, art: 328, num: 45 };
+const SPINE_KEY = [["noun", "Nouns"], ["verb", "Verbs"], ["adj", "Adjectives"], ["adv", "Adverbs"], ["pron", "Pronouns"], ["prep", "Little words"], ["num", "Numbers"]];
+const spineH = i => 74 + ((LW[i].rank * 37) % 22);
+function bookHTML(i, zoom) {
+  const w = LW[i];
+  if (!w) return `<i class="bk none"></i>`;
+  const got = isLearned(i), gold = got && isMastered(i), fly = LIB.fly.includes(i);
+  const st = `--h:${SPINE_HUE[w.pos] ?? 212};--ht:${spineH(i)}%`;
+  if (!zoom) return `<i class="bk ${got ? "on" : "empty"} ${gold ? "gold" : ""} ${fly ? "fly" : ""}" data-b="${i}" style="${st}"></i>`;
+  return `<button class="bk ${got ? "on" : "empty"} ${gold ? "gold" : ""} ${LIB.sel === i ? "sel" : ""}" data-a="book" data-b="${i}" style="${st}" aria-label="${got ? esc(w.pt) : `Book ${i + 1}, not learned yet`}">${got ? `<span lang="pt-PT">${esc(w.pt)}</span>` : `<span class="num">${i + 1}</span>`}</button>`;
+}
+function shelvesShown() { const reached = LADDER_TIERS.filter(t => S.badges[t.n]).length; return Math.min(LADDER_TIERS[LADDER_TIERS.length - 1].n / SHELF, LADDER_TIERS[Math.min(reached, LADDER_TIERS.length - 1)].n / SHELF); }
+function screenLibrary() {
+  const n = learnedCount(), tier = currentTier(), prevN = [0, ...LADDER_TIERS.map(t => t.n)][LADDER_TIERS.indexOf(tier)];
+  const badges = `<div class="badges">${LADDER_TIERS.map(t => `<div class="badge-t ${S.badges[t.n] ? "on" : ""}" title="${esc(t.name)}"><span aria-hidden="true">${t.badge}</span><b>${esc(t.name)}</b><small>${S.badges[t.n] ? "Achieved" : `${t.n.toLocaleString("en-GB")} words`}</small></div>`).join("")}</div>`;
+  if (LIB.c != null) return caseView(LIB.c);
+  const cases = shelvesShown();
+  const newWords = LIB.fly.map(i => LW[i].pt);
+  return `<section class="stack" style="gap:6px">
+    <div class="row" style="justify-content:space-between;align-items:flex-end"><h1>Library</h1><span class="num"><b style="font-size:1.4rem">${n}</b> <span class="muted">/ ${tier.n} books</span></span></div>
+    <div class="bar"><i style="width:${Math.min(100, 100 * (n - prevN) / (tier.n - prevN))}%"></i></div>
+    <div class="small muted">${S.badges[tier.n] ? "Every shelf is full!" : `${tier.n - n} more books to reach <b>${esc(tier.name)}</b>.`} A word becomes a book when you get it right on two different days. Gold books are words you know solidly.</div>
+  </section>
+  ${newWords.length ? `<div class="card newbooks">${ICON.library}<div><b>${newWords.length} new book${newWords.length > 1 ? "s" : ""}</b> since your last visit<div class="small muted" lang="pt-PT">${newWords.slice(0, 24).map(esc).join(", ")}${newWords.length > 24 ? "…" : ""}</div></div></div>`
+    : LIB.firstVisit && !n ? `<div class="card newbooks">${ICON.library}<div><b>Your shelves are empty, for now.</b><div class="small muted">Do a ladder lesson today and again tomorrow, and watch the books fly in.</div></div></div>` : ""}
+  ${badges}
+  <section class="cases">${Array.from({ length: cases }, (_, c) => {
+    const start = c * SHELF, have = LW.slice(start, start + SHELF), got = have.filter(w => isLearned(w.i)).length, ready = have.length > 0;
+    if (!ready) return `<div class="case locked"><div class="case-head"><b>Shelf ${c + 1}</b><span>Coming soon</span></div><div class="planks">${Array.from({ length: 5 }, () => `<div class="plank"></div>`).join("")}</div></div>`;
+    return `<button class="case ${got === SHELF ? "full" : ""}" data-a="case" data-c="${c}" aria-label="Shelf ${c + 1}: ${got} of ${SHELF} books">
+      <div class="case-head"><b>Shelf ${c + 1}</b><span class="num">${got}/${SHELF}</span></div>
+      <div class="planks">${Array.from({ length: 5 }, (_, p) => `<div class="plank">${Array.from({ length: 10 }, (_, b) => bookHTML(start + p * 10 + b)).join("")}</div>`).join("")}</div>
+    </button>`; }).join("")}</section>
+  ${cases * SHELF > LW.length ? `<p class="small muted">Shelves ${LW.length / SHELF + 1}–${cases} fill with words ${LW.length + 1}–${(cases * SHELF).toLocaleString("en-GB")}, coming in the next update.</p>` : ""}`;
+}
+function caseView(c) {
+  const start = c * SHELF, ws = LW.slice(start, start + SHELF), got = ws.filter(w => isLearned(w.i)).length;
+  const sel = LIB.sel != null ? LW[LIB.sel] : null;
+  let info = "";
+  if (sel) {
+    const lesson = Math.floor(sel.i / LS_) + 1;
+    info = isLearned(sel.i)
+      ? `<section class="card stack" id="bookinfo"><div class="row"><div class="big-word" lang="pt-PT" style="flex:1;font-size:1.8rem">${esc(sel.pt)}</div>${speakBtn(sel.pt)}${speakBtn(sel.pt, true)}</div>
+          <div>${esc(sel.en)}</div>${sel.alt.length ? `<div class="small muted">Also: <span lang="pt-PT">${sel.alt.map(esc).join(", ")}</span></div>` : ""}
+          <div class="row" style="align-items:flex-start">${speakBtn(sel.xpt)}<div><div lang="pt-PT">${esc(sel.xpt)}</div><div class="small muted">${esc(sel.xen)}</div></div></div>
+          <div class="small muted">${esc(POS_LABEL[sel.pos] || sel.pos)} · #${sel.rank} most common · learned ${new Date(S.words[sel.pt][1]).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}${isMastered(sel.i) ? " · <b>known solidly</b>" : ""}</div></section>`
+      : `<section class="card stack" id="bookinfo"><div class="big-word num" style="font-size:1.8rem">#${sel.i + 1}</div><div class="muted">${wordRec(sel.i) ? "Half-way there: you got this word right once. Get it right again on another day." : `Not learned yet. This word is in <b>Lesson ${lesson}</b>.`}</div>
+          <button class="btn" data-a="practice" data-u="lad${lesson - 1}">Practise Lesson ${lesson}</button></section>`;
+  }
+  return `<div class="row"><button class="icon-btn" data-a="caseback" aria-label="Back to library">${ICON.back}</button><h1 style="flex:1">Shelf ${c + 1}</h1><span class="num muted">${got}/${SHELF}</span></div>
+  <div class="small muted">Words ${start + 1}–${start + ws.length}. Tap a book.</div>
+  <div class="spine-key">${SPINE_KEY.map(([p, l]) => `<span><i style="--h:${SPINE_HUE[p]}"></i>${l}</span>`).join("")}<span><i class="g"></i>Known solidly</span></div>
+  <section class="case zoom">${Array.from({ length: 5 }, (_, p) => `<div class="plank">${Array.from({ length: 10 }, (_, b) => bookHTML(start + p * 10 + b, true)).join("")}</div>`).join("")}</section>
+  ${info}
+  <div class="row" style="justify-content:space-between">${c > 0 ? `<button class="btn ghost" data-a="case" data-c="${c - 1}">‹ Shelf ${c}</button>` : "<span></span>"}${(c + 1) * SHELF < LW.length ? `<button class="btn ghost" data-a="case" data-c="${c + 1}">Shelf ${c + 2} ›</button>` : ""}</div>`;
+}
+function runFly() {
+  if (TAB !== "library" || LIB.c != null || !LIB.fly.length) return;
+  const books = LIB.fly.map(i => document.querySelector(`.bk.fly[data-b="${i}"]`)).filter(Boolean).slice(0, 80);
+  LIB.fly = [];
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || !books[0] || !books[0].animate) { books.forEach(b => b.classList.remove("fly")); return; }
+  const sx = innerWidth / 2, sy = innerHeight * 0.85;
+  books.forEach((b, j) => {
+    const r = b.getBoundingClientRect(), dx = sx - (r.left + r.width / 2), dy = sy - (r.top + r.height / 2);
+    const a = b.animate([
+      { transform: `translate(${dx}px,${dy}px) scale(3) rotate(${j % 2 ? 25 : -25}deg)`, opacity: 0 },
+      { opacity: 1, offset: 0.25 },
+      { transform: `translate(${dx * 0.3}px,${dy * 0.3 - 30}px) scale(1.6) rotate(${j % 2 ? -8 : 8}deg)`, offset: 0.7 },
+      { transform: "none", opacity: 1 }
+    ], { duration: 900, delay: 250 + j * 110, easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards" });
+    a.onfinish = () => { b.classList.remove("fly"); b.classList.add("land"); };
+  });
+}
+
 /* ================= Render & actions ================= */
-const SCREENS = { learn: screenLearn, review: screenReview, chat: screenChat, verbs: screenVerbs, more: screenMore };
+const SCREENS = { learn: screenLearn, library: screenLibrary, review: screenReview, chat: screenChat, verbs: screenVerbs, more: screenMore };
 function render() {
   renderTop(); renderNav();
   const m = $("main"), keepScroll = m.dataset.tab === TAB ? m.scrollTop : 0;
@@ -1251,17 +1451,22 @@ function render() {
   const vin = $("#vin"); if (vin) vin.onkeydown = ev => { if (ev.key === "Enter") { ev.preventDefault(); ACT.vcheck(); } };
   const chin = $("#chin"); if (chin) chin.onkeydown = ev => { if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); ACT.chsend(); } };
   if (TAB === "chat" && CH.started) { const c = $(".chat"); if (c) c.lastElementChild && c.lastElementChild.scrollIntoView({ block: "end" }); }
+  if (TAB === "library" && LIB.fly.length) requestAnimationFrame(runFly);
 }
 
 const ACT = {
-  tab: b => { TAB = b.dataset.tab; if (TAB === "more") MORE = "menu"; location.hash = TAB; render(); $("main").scrollTop = 0; },
+  tab: b => { TAB = b.dataset.tab; if (TAB === "more") MORE = "menu"; if (TAB === "library") openLibrary(); location.hash = TAB; render(); $("main").scrollTop = 0; },
+  libgo: () => { closeOverlay(); TAB = "library"; openLibrary(); location.hash = TAB; render(); $("main").scrollTop = 0; },
+  case: b => { LIB.c = +b.dataset.c; LIB.sel = null; LIB.fly = []; render(); $("main").scrollTop = 0; },
+  caseback: () => { LIB.c = null; LIB.sel = null; render(); },
+  book: b => { LIB.sel = +b.dataset.b; render(); const d = $("#bookinfo"); if (d) d.scrollIntoView({ block: "nearest", behavior: "smooth" }); },
   say: b => speak(b.dataset.t, { slow: !!b.dataset.slow }),
   acc: b => { const t = $("#" + b.dataset.target); if (t) insertAtCursor(t, b.dataset.c); },
   close: () => closeOverlay(),
   study: b => startStudy(b.dataset.u),
   stnext: () => { ST.i++; renderStudy(); },
   stprev: () => { ST.i = Math.max(0, ST.i - 1); renderStudy(); },
-  practice: b => { const id = b.dataset.u; ST = null; startLesson(unitKeys(id), { unit: id, level: Math.min(unitLevel(id), 2) }); },
+  practice: b => { const id = b.dataset.u; ST = null; const lad = /^lad\d+$/.test(id); startLesson(lad ? ladderKeys(+id.slice(3)) : unitKeys(id), { unit: id, level: Math.min(unitLevel(id), 2) }); },
   flash: () => startFlash(dueKeys()),
   quizdue: () => startLesson(dueKeys(), { level: 1 }),
   mistakes: () => startLesson(Object.keys(S.mistakes).filter(getItem), { level: 1 }),
@@ -1316,7 +1521,7 @@ const ACT = {
   },
   mic: b => toggleMic(text => { const t = $("#" + b.dataset.target); if (t) { t.value = text; t.dispatchEvent(new Event("input", { bubbles: true })); } if (W && b.dataset.target === "wmine") W.mine = text; if (L && b.dataset.target === "ans") { L.text = text; const c = $("[data-a=check]"); if (c) c.disabled = !text.trim(); } }),
   fshow: () => { FL.show = true; renderFlash(); },
-  fgrade: b => { const k = FL.keys[FL.i]; grade(k, +b.dataset.q); if (+b.dataset.q === 0) S.mistakes[k] = 2; FL.n++; FL.i++; FL.show = false; FL.front = null; addXP(1); renderFlash(); },
+  fgrade: b => { const k = FL.keys[FL.i]; grade(k, +b.dataset.q); if (+b.dataset.q >= 2 && LEMMA_KEY[k] != null) creditWord(LEMMA_KEY[k]); if (+b.dataset.q === 0) S.mistakes[k] = 2; FL.n++; FL.i++; FL.show = false; FL.front = null; addXP(1); renderFlash(); },
   addcustom: () => { const p = $("#cpt").value.trim(), e = $("#cen").value.trim(); if (!p || !e) { toast("Fill in both the Portuguese and the English."); return; } const k = "c:" + Date.now(); S.custom[k] = { pt: p, en: e }; S.cards[k] = newCard(); save(); $("#cpt").value = $("#cen").value = ""; render(); toast("Added to your review queue"); },
   delcustom: b => { const k = b.dataset.k; delete S.custom[k]; delete S.cards[k]; delete S.mistakes[k]; save(); render(); },
   chmode: b => { CH.mode = b.dataset.m; if (CH.mode === "free" || CH.mode === "role") { if ((CH.mode === "role") !== !!CH.scenario) { CH.started = false; CH.msgs = []; CH.scenario = null; } } render(); },
@@ -1404,7 +1609,7 @@ const ACT = {
   wotd: () => openWotd(false),
   wpractise: () => startWotdPractice(),
   wmore: async () => {
-    const w = WOTD[W.i]; W.moreBusy = true; renderWotd();
+    const w = LW[W.i]; W.moreBusy = true; renderWotd();
     const prompt = `${PT_RULES}\n${LEVELS[S.settings.level] || LEVELS.A1}\nWrite 3 new, varied, everyday example sentences using the word "${w.pt}" (${w.en}), set in Portugal. Return ONLY JSON: {"examples": [["sentence in European Portuguese", "English translation"]]}`;
     try { const r = await askJSON(prompt, { modelTier: "quick" }); if (W) W.more = W.more.concat((r.examples || []).filter(x => Array.isArray(x) && x.length >= 2).map(x => [String(x[0]), String(x[1])])).slice(-9); }
     catch (e) { toast(aiErr(e)); }
@@ -1422,7 +1627,7 @@ const ACT = {
   },
   wcheck: async () => {
     const spoken = !!W.spoken; W.spoken = false;
-    const w = WOTD[W.i], t = (W.mine || "").trim(); if (!t) { toast("Write a sentence first."); return; }
+    const w = LW[W.i], t = (W.mine || "").trim(); if (!t) { toast("Write a sentence first."); return; }
     W.busy = true; renderWotd();
     const prompt = `${PT_RULES}\nA learner (${S.settings.level}) wrote a sentence to practise the word "${w.pt}" (${w.en}). ${spoken ? "The sentence was spoken and transcribed by speech recognition, so if a word looks like a mis-recognition of a Portuguese word, assume they meant that word and mention in explanation which word didn't come through clearly, with a short pronunciation tip. " : ""}Check it. Return ONLY JSON: {"ok": true if it is correct, natural European Portuguese and uses the word (any form), else false, "corrected": "the sentence rewritten as natural European Portuguese using the word", "explanation": "one or two short, encouraging English sentences; if they used a word or form not used in Portugal, give the Portugal one without mentioning other countries", "translation": "English translation of the corrected sentence"}\nSentence: """${t}"""`;
     try { const r = await askJSON(prompt, { modelTier: "default" }); if (W) { W.fb = { ok: !!r.ok, corrected: String(r.corrected || t), explanation: String(r.explanation || ""), translation: String(r.translation || ""), sentence: t }; if (r.ok) { S.mine[today()] = t; addXP(3); } S.stats.chats++; save(); } }
@@ -1464,6 +1669,7 @@ document.addEventListener("click", e => {
 document.addEventListener("keydown", e => { if (e.key === "Escape" && MENU_OPEN) { closeMenu(); const b = document.querySelector(".acct-bubble"); if (b) b.focus(); } });
 window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (SCREENS[h] && h !== TAB) { TAB = h; render(); } });
 
+if (TAB === "library") openLibrary();
 initCloud();
 refreshAI();
 render();
