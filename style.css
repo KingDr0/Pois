@@ -238,3 +238,17 @@ body.gated #app, body.gated #ov { visibility: hidden; }
 .signin .perks { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; font-size: .95rem; }
 .signin .fine { margin: 0; text-align: center; }
 .signin .btn.google { padding: 13px 16px; font-size: 1rem; }
+
+/* Account bubble + menu */
+.acct-wrap { position: relative; }
+.acct-bubble { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--card); outline: 2px solid color-mix(in srgb, hsl(var(--hue) 55% 45%) 40%, transparent); background: hsl(var(--hue) 55% 42%); color: #fff; font-weight: 800; font-size: .82rem; letter-spacing: .02em; display: grid; place-items: center; padding: 0; flex: none; }
+.acct-bubble.big { width: 44px; height: 44px; font-size: 1rem; outline: none; border: 0; }
+.acct-menu { position: absolute; right: 0; top: calc(100% + 10px); width: min(280px, calc(100vw - 32px)); background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 14px 40px rgba(0,0,0,.18); padding: 8px; z-index: 30; display: flex; flex-direction: column; }
+.acct-head { display: flex; align-items: center; gap: 10px; padding: 8px 8px 6px; }
+.acct-sync { padding: 0 8px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.acct-menu [role=menuitem] { text-align: left; border: 0; background: none; padding: 11px 10px; border-radius: 10px; font-weight: 700; }
+.acct-menu [role=menuitem]:hover, .acct-menu [role=menuitem]:focus-visible { background: var(--tile-soft); }
+.acct-menu .danger { color: var(--bad); }
+.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top { z-index: 5; }
+@media (max-width: 380px) { .brand small { display: none; } }

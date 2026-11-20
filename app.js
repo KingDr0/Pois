@@ -445,8 +445,26 @@ function renderTop() {
   $("#top").innerHTML = `<div class="brand">Pois<small>PORTUGUÊS DE PORTUGAL</small></div><div class="sp"></div>
     <span class="chip" title="Day streak">${ICON.flame}<span class="num">${st}</span></span>
     ${S.freezes ? `<span class="chip" title="Streak freezes">${ICON.ice}<span class="num">${S.freezes}</span></span>` : ""}
-    <span class="chip sun" title="Total XP">${ICON.bolt}<span class="num">${S.xp}</span></span>`;
+    <span class="chip sun" title="Total XP">${ICON.bolt}<span class="num">${S.xp}</span></span>
+    ${USER ? `<div class="acct-wrap">
+      <button class="acct-bubble" data-a="acct" aria-haspopup="menu" aria-expanded="${MENU_OPEN}" aria-label="Account: ${esc(USER.name || USER.email)}" style="--hue:${hueOf(USER.uid)}">${esc(initials(USER))}</button>
+      ${MENU_OPEN ? `<div class="acct-menu" role="menu">
+        <div class="acct-head"><span class="acct-bubble big" style="--hue:${hueOf(USER.uid)}" aria-hidden="true">${esc(initials(USER))}</span>
+          <div style="min-width:0"><b>${esc(USER.name || "Signed in")}</b><div class="small muted ellipsis">${esc(USER.email)}</div></div></div>
+        <div class="small muted acct-sync">${CLOUD === "cloud" ? "✓ Progress saved to your account" : CLOUD === "syncing" ? "Syncing…" : CLOUD === "error" ? "Offline: will sync when you're back online" : "Saved on this device"}</div>
+        <button role="menuitem" data-a="acctsettings">Settings</button>
+        <button role="menuitem" data-a="signout" class="danger">Sign out</button>
+      </div>` : ""}
+    </div>` : ""}`;
 }
+let MENU_OPEN = false;
+function initials(u) {
+  const n = (u.name || "").trim();
+  if (n) { const p = n.split(/\s+/); return ((p[0][0] || "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase(); }
+  return (u.email || "?")[0].toUpperCase();
+}
+function hueOf(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
+function closeMenu() { if (MENU_OPEN) { MENU_OPEN = false; renderTop(); } }
 function renderNav() {
   const due = dueKeys().length;
   const tabs = [["learn", "Aprender"], ["review", "Rever"], ["chat", "Conversa"], ["verbs", "Verbos"], ["more", "Mais"]];
@@ -1245,8 +1263,10 @@ const ACT = {
     if (W) { W.busy = false; renderWotd(); const say = W.fb && (W.fb.ok ? W.fb.sentence : W.fb.corrected); if (say && S.settings.autoplay) speak(say); }
   },
   signin: () => doSignIn(),
+  acct: () => { MENU_OPEN = !MENU_OPEN; renderTop(); const f = MENU_OPEN && document.querySelector(".acct-menu [role=menuitem]"); if (f) f.focus(); },
+  acctsettings: () => { MENU_OPEN = false; closeOverlay(); TAB = "more"; MORE = "settings"; location.hash = "more"; render(); $("main").scrollTop = 0; },
   gatecontinue: () => { if (USER) { hideGate(); return; } showGate("signin"); },
-  signout: () => { if (window.PoisCloud) { GATE_PHASE = "ready"; GATE = "signin"; PoisCloud.signOut(); } },
+  signout: () => { MENU_OPEN = false; if (window.PoisCloud) { GATE_PHASE = "ready"; GATE = "signin"; PoisCloud.signOut(); } },
   aitest: async b => {
     b.disabled = true; b.textContent = "Testing…";
     try { const r = await aiText(`${PT_RULES}\nSay hello to a learner in one short European Portuguese sentence.`); toast("Tutor says: " + String(r).trim().slice(0, 120)); speak(String(r).trim()); }
@@ -1262,11 +1282,13 @@ const ACT = {
   reset: () => { if (!RESET_ARMED) { RESET_ARMED = true; render(); return; } S = freshState(); save(); RESET_ARMED = false; render(); toast("Progress reset"); }
 };
 document.addEventListener("click", e => {
+  if (MENU_OPEN && !e.target.closest(".acct-wrap")) closeMenu();
   const b = e.target.closest("[data-a]");
   if (!b || b.disabled) return;
   const f = ACT[b.dataset.a];
   if (f) { e.preventDefault(); f(b, e); }
 });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && MENU_OPEN) { closeMenu(); const b = document.querySelector(".acct-bubble"); if (b) b.focus(); } });
 window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (SCREENS[h] && h !== TAB) { TAB = h; render(); } });
 
 initCloud();
