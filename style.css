@@ -278,3 +278,7 @@ body.gated #app, body.gated #ov { visibility: hidden; }
 .icon-btn.rec { background: var(--bad); color: #fff; border-color: var(--bad); animation: ring 1.4s ease-out infinite; }
 .msg.me.listening { opacity: .7; font-style: italic; }
 .msg .spoken svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; opacity: .8; }
+
+/* Update-ready bar */
+.updbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 45; width: min(440px, calc(100% - 24px)); display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--ink); color: var(--paper); padding: 10px 10px 10px 14px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); font-weight: 700; font-size: .92rem; }
+.updbar .btn { padding: 8px 14px; }

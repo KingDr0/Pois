@@ -923,6 +923,7 @@ function settingsScreen() {
     <div class="small">${syncText()}</div>${USER ? `<button class="btn ghost" data-a="signout">Sign out</button>` : googleBtn()}
     <div class="grid2"><button class="btn ghost" data-a="export">Copy backup</button><button class="btn ghost" data-a="importshow">Restore backup</button></div>
     <div id="importbox" hidden><textarea id="importtxt" rows="3" placeholder="Paste your backup here"></textarea><button class="btn" data-a="import">Restore</button></div>
+    <div class="row small" style="justify-content:space-between"><span class="muted">App version <span id="appver" class="num">${esc((APP_VERSION || "").replace("pois-", "") || "…")}</span></span><button class="btn ghost" data-a="checkupdate">Check for updates</button></div>
     <button class="btn ${RESET_ARMED ? "bad" : "ghost"}" data-a="reset">${RESET_ARMED ? "Tap again to erase all progress" : "Reset progress"}</button></section>`;
 }
 function aboutScreen() {
@@ -1429,6 +1430,12 @@ const ACT = {
     if (W) { W.busy = false; renderWotd(); const say = W.fb && (W.fb.ok ? W.fb.sentence : W.fb.corrected); if (say && S.settings.autoplay) speak(say); }
   },
   signin: () => doSignIn(),
+  restart: () => location.reload(),
+  checkupdate: async b => {
+    b.disabled = true; b.textContent = "Checking…";
+    await checkForUpdate();
+    setTimeout(() => { if (!UPDATE_READY) { b.disabled = false; b.textContent = "Check for updates"; toast("You're on the latest version."); } }, 4000);
+  },
   acct: () => { MENU_OPEN = !MENU_OPEN; renderTop(); const f = MENU_OPEN && document.querySelector(".acct-menu [role=menuitem]"); if (f) f.focus(); },
   acctsettings: () => { MENU_OPEN = false; closeOverlay(); TAB = "more"; MORE = "settings"; location.hash = "more"; render(); $("main").scrollTop = 0; },
   gatecontinue: () => { if (USER) { hideGate(); return; } showGate("signin"); },
@@ -1461,4 +1468,35 @@ initCloud();
 refreshAI();
 render();
 if (!CLOUD_READY) setTimeout(maybeWelcome, 700);
-if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+/* ---------- Self-updating ----------
+   On launch and whenever the app comes back to the foreground, ask for a fresh sw.js.
+   A new version installs in the background, takes over, and the app restarts itself:
+   straight away while it's starting up, or via a "Restart" bar if you're in the middle of something. */
+const BOOT_AT = Date.now();
+let SW_REG = null, APP_VERSION = "", UPDATE_READY = false;
+function showUpdateBar() {
+  if ($("#updbar")) return;
+  const d = document.createElement("div"); d.id = "updbar"; d.className = "updbar"; d.setAttribute("role", "status");
+  d.innerHTML = `<span>A new version of Pois is ready.</span><button class="btn sun" data-a="restart">Restart</button>`;
+  document.body.appendChild(d);
+}
+async function checkForUpdate() { if (SW_REG) { try { await SW_REG.update(); } catch (e) {} } }
+function setupUpdates() {
+  if (!("serviceWorker" in navigator) || (location.protocol !== "https:" && location.hostname !== "localhost")) return;
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.type === "version") { APP_VERSION = e.data.version; const v = $("#appver"); if (v) v.textContent = APP_VERSION.replace("pois-", ""); } });
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || reloading) return; /* first install: already the newest */
+    const busy = !!(L || ST || FL || CH.busy || CH.listening || (W && W.listening));
+    if (Date.now() - BOOT_AT < 20000 || GATE || !busy) { reloading = true; location.reload(); }
+    else { UPDATE_READY = true; showUpdateBar(); }
+  });
+  navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
+    SW_REG = reg; checkForUpdate();
+    if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage("version");
+  }).catch(() => {});
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(); });
+  setInterval(checkForUpdate, 60 * 60 * 1000);
+}
+setupUpdates();
