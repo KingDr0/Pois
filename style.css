@@ -211,3 +211,30 @@ details summary { cursor: pointer; font-weight: 700; }
 /* Google sign-in button */
 .btn.google { background: #fff; color: #1f1f1f; border: 1px solid #dadce0; box-shadow: none; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
 .btn.google:active { transform: none; background: #f2f2f2; }
+
+/* Splash and sign-in gate */
+body.gated #app, body.gated #ov { visibility: hidden; }
+#gate { position: fixed; inset: 0; z-index: 40; background: var(--tile); color: #fff; display: flex; transition: opacity .25s; }
+#gate[hidden] { display: none; }
+#gate.leaving { opacity: 0; }
+#gate::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .14;
+  background:
+    radial-gradient(circle at 0 0, transparent 26px, #fff 27px, #fff 29px, transparent 30px) 0 0/56px 56px,
+    radial-gradient(circle at 100% 100%, transparent 26px, #fff 27px, #fff 29px, transparent 30px) 0 0/56px 56px,
+    radial-gradient(circle at 50% 50%, #fff 3px, transparent 4px) 0 0/56px 56px; }
+.splash { position: relative; flex: 1; border: 0; background: transparent; color: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; padding-bottom: max(24px, env(safe-area-inset-bottom)); cursor: pointer; font: inherit; }
+.splash:disabled { cursor: default; }
+.splash-mark { width: 104px; height: 104px; border-radius: 26px; background: #fff; color: var(--tile); display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 64px; position: relative; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+.splash-mark i { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: var(--sun); right: 20px; bottom: 20px; }
+.splash-mark.small { width: 64px; height: 64px; border-radius: 16px; font-size: 40px; }
+.splash-mark.small i { width: 11px; height: 11px; right: 12px; bottom: 12px; }
+.splash-name { font-family: var(--display); font-weight: 800; font-size: 3.2rem; letter-spacing: -.03em; margin-top: 10px; line-height: 1; }
+.splash-sub { font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: .78rem; opacity: .85; }
+.splash-tap { position: absolute; bottom: max(40px, calc(env(safe-area-inset-bottom) + 28px)); font-weight: 700; font-size: .95rem; opacity: .95; animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+.signin { position: relative; margin: auto; width: min(420px, calc(100% - 32px)); background: var(--card); color: var(--ink); border-radius: 22px; padding: 28px 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.signin h1 { font-size: 1.7rem; }
+.signin .lead { margin: 0; color: var(--muted); }
+.signin .perks { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; font-size: .95rem; }
+.signin .fine { margin: 0; text-align: center; }
+.signin .btn.google { padding: 13px 16px; font-size: 1rem; }

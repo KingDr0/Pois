@@ -89,22 +89,71 @@ async function onSignedIn(u) {
   } catch (e) { CLOUD = "error"; }
   refreshAI(); render(); if (W) renderWotd();
 }
+/* ---------- Splash + sign-in gate: nobody learns until signed in ---------- */
+let GATE = null, GATE_PHASE = "loading", GATE_SHOWN_AT = 0;
+function showGate(view) {
+  GATE = view; const g = $("#gate"); if (!g) return;
+  g.hidden = false; document.body.classList.add("gated");
+  if (!GATE_SHOWN_AT) GATE_SHOWN_AT = Date.now();
+  renderGate();
+}
+function hideGate() {
+  const g = $("#gate"); GATE = null; if (!g || g.hidden) return;
+  const wait = Math.max(0, 700 - (Date.now() - GATE_SHOWN_AT));
+  setTimeout(() => { if (GATE) return; g.classList.add("leaving"); setTimeout(() => { if (GATE) { g.classList.remove("leaving"); return; } g.hidden = true; g.classList.remove("leaving"); document.body.classList.remove("gated"); maybeWelcome(); }, 260); }, wait);
+}
+function renderGate() {
+  const g = $("#gate"); if (!g || !GATE) return;
+  if (GATE === "splash") {
+    const ready = GATE_PHASE === "ready";
+    g.innerHTML = `<button class="splash" ${ready ? 'data-a="gatecontinue"' : "disabled"} aria-label="${ready ? "Tap to continue" : "Loading"}">
+      <span class="splash-mark" aria-hidden="true">P<i></i></span>
+      <span class="splash-name">Pois</span>
+      <span class="splash-sub">Português de Portugal</span>
+      <span class="splash-tap">${ready ? "Toca para continuar · Tap to continue" : "A carregar…"}</span>
+    </button>`;
+    return;
+  }
+  g.innerHTML = `<div class="signin">
+    <span class="splash-mark small" aria-hidden="true">P<i></i></span>
+    <h1>Bem-vindo ao Pois</h1>
+    <p class="lead">Sign in to start learning European Portuguese.</p>
+    <ul class="perks">
+      <li><b>Your progress is saved:</b> streak, words and levels live in your account.</li>
+      <li><b>Any device:</b> pick up on your phone or computer where you left off.</li>
+      <li><b>Free AI tutor:</b> chat with Rita, roleplays and instant corrections.</li>
+    </ul>
+    ${GATE_PHASE === "signing" ? `<button class="btn google wide" disabled>Signing in…</button>` : googleBtn("Continue with Google").replace('class="btn google"', 'class="btn google wide"')}
+    <p class="small muted fine">We only store your learning progress. Nothing is shared or sold.</p>
+  </div>`;
+}
+
 function initCloud() {
   const cfg = window.POIS_CONFIG && POIS_CONFIG.firebase;
   if (!window.PoisCloud || !cfg || !cfg.apiKey) return;
   try { if (!PoisCloud.init(cfg)) return; } catch (e) { return; }
   CLOUD_READY = true;
+  showGate("splash");
+  const slow = setTimeout(() => { if (GATE_PHASE === "loading") { GATE_PHASE = "ready"; renderGate(); } }, 8000);
   PoisCloud.onUser(u => {
-    if (u) { if (!USER || USER.uid !== u.uid) onSignedIn(u); }
-    else { USER = null; CLOUD = "local"; refreshAI(); render(); if (W) renderWotd(); }
+    clearTimeout(slow);
+    if (u) { GATE_PHASE = "ready"; hideGate(); if (!USER || USER.uid !== u.uid) onSignedIn(u); }
+    else {
+      USER = null; CLOUD = "local"; refreshAI(); render();
+      closeOverlay(); W = null;
+      if (GATE_PHASE === "signing" || GATE === "signin") { GATE_PHASE = "ready"; showGate("signin"); }
+      else { GATE_PHASE = "ready"; showGate("splash"); }
+    }
   });
 }
 function doSignIn() {
   if (!CLOUD_READY) { toast("Sign-in isn't set up yet."); return; }
-  PoisCloud.signIn().catch(e => toast(e && e.code === "auth/unauthorized-domain" ? "This web address isn't authorised in Firebase yet." : "Sign-in didn't work. Try again."));
+  if (GATE) { GATE_PHASE = "signing"; renderGate(); }
+  PoisCloud.signIn().then(() => { if (!USER && GATE) { GATE_PHASE = "ready"; renderGate(); } })
+    .catch(e => { if (GATE) { GATE_PHASE = "ready"; renderGate(); } toast(e && e.code === "auth/unauthorized-domain" ? "This web address isn't authorised in Firebase yet." : e && e.code === "auth/network-request-failed" ? "No connection. Connect to the internet to sign in." : "Sign-in didn't work. Try again."); });
 }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && USER) { clearTimeout(pushTimer); pushCloud(); } });
-const syncText = () => CLOUD === "cloud" ? `Saved to your Google account${USER && USER.email ? ` (${esc(USER.email)})` : ""}.` : CLOUD === "syncing" ? "Syncing…" : CLOUD === "error" ? "Couldn't reach the server. Progress is saved on this device and will sync later." : "Saved on this device only. Sign in with Google to keep it safe and use it on other devices.";
+const syncText = () => CLOUD === "cloud" ? `Saved to your Google account${USER && USER.email ? ` (${esc(USER.email)})` : ""}.` : CLOUD === "syncing" ? "Syncing…" : CLOUD === "error" ? "Couldn't reach the server. Progress is saved on this device and will sync when you're back online." : "Saved on this device only.";
 const googleBtn = (label = "Sign in with Google") => CLOUD_READY ? `<button class="btn google" data-a="signin"><svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13.3 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.4 0-11.7-3.8-13.6-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>${label}</button>` : "";
 
 /* ---------- Dates, XP, streak ---------- */
@@ -953,6 +1002,7 @@ function wotdCard() {
     <div class="row" style="gap:8px;margin-top:4px"><h2 lang="pt-PT">${esc(w.pt)}</h2></div><div class="muted">${esc(w.en)}</div></button>`;
 }
 function maybeWelcome() {
+  if (GATE || (CLOUD_READY && !USER)) return;
   if (S.wotdSeen === today() || L || ST || FL || W) return;
   S.wotdSeen = today(); save();
   openWotd(true);
@@ -1195,7 +1245,8 @@ const ACT = {
     if (W) { W.busy = false; renderWotd(); const say = W.fb && (W.fb.ok ? W.fb.sentence : W.fb.corrected); if (say && S.settings.autoplay) speak(say); }
   },
   signin: () => doSignIn(),
-  signout: () => { if (window.PoisCloud) PoisCloud.signOut(); toast("Signed out. Your progress stays on this device."); },
+  gatecontinue: () => { if (USER) { hideGate(); return; } showGate("signin"); },
+  signout: () => { if (window.PoisCloud) { GATE_PHASE = "ready"; GATE = "signin"; PoisCloud.signOut(); } },
   aitest: async b => {
     b.disabled = true; b.textContent = "Testing…";
     try { const r = await aiText(`${PT_RULES}\nSay hello to a learner in one short European Portuguese sentence.`); toast("Tutor says: " + String(r).trim().slice(0, 120)); speak(String(r).trim()); }
@@ -1221,5 +1272,5 @@ window.addEventListener("hashchange", () => { const h = location.hash.slice(1); 
 initCloud();
 refreshAI();
 render();
-setTimeout(maybeWelcome, 700);
+if (!CLOUD_READY) setTimeout(maybeWelcome, 700);
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});

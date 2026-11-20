@@ -6,7 +6,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRe
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
 
-let app = null, auth = null, db = null, ai = null, user = null;
+let app = null, auth = null, db = null, ai = null, user = null, resolved = false;
 const listeners = [];
 
 function init(config) {
@@ -17,7 +17,7 @@ function init(config) {
   db = getFirestore(app);
   try { ai = getAI(app, { backend: new GoogleAIBackend() }); } catch (e) { ai = null; }
   getRedirectResult(auth).catch(() => {});
-  onAuthStateChanged(auth, u => { user = u; listeners.forEach(f => { try { f(u ? publicUser(u) : null); } catch (e) {} }); });
+  onAuthStateChanged(auth, u => { user = u; resolved = true; listeners.forEach(f => { try { f(u ? publicUser(u) : null); } catch (e) {} }); });
   return true;
 }
 const publicUser = u => ({ uid: u.uid, name: u.displayName || "", email: u.email || "", photo: u.photoURL || "" });
@@ -35,7 +35,7 @@ async function signIn() {
   }
 }
 const signOut = () => auth ? fbSignOut(auth) : Promise.resolve();
-const onUser = f => { listeners.push(f); if (auth) f(user ? publicUser(user) : null); };
+const onUser = f => { listeners.push(f); if (auth && resolved) f(user ? publicUser(user) : null); };
 
 async function load() {
   if (!db || !user) return null;
