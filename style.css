@@ -255,3 +255,26 @@ body.gated #app, body.gated #ov { visibility: hidden; }
 
 /* reCAPTCHA v3 badge hidden; attribution shown on the sign-in page instead (allowed by Google's terms) */
 .grecaptcha-badge { visibility: hidden; }
+
+.praise-en { font-family: var(--body); font-weight: 400; font-size: .8em; opacity: .75; margin-left: 4px; }
+
+/* Hands-free speaking */
+.mic-zone { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0 4px; }
+.mic-big { width: 88px; height: 88px; border-radius: 50%; border: 0; background: var(--tile); color: var(--card); display: grid; place-items: center; box-shadow: 0 6px 0 color-mix(in srgb, var(--tile) 60%, #000); }
+.mic-big svg { width: 38px; height: 38px; }
+.mic-big.on { background: var(--bad); box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 50%, transparent); animation: ring 1.4s ease-out infinite; }
+@keyframes ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 45%, transparent); } 100% { box-shadow: 0 0 0 22px transparent; } }
+.mic-hint { font-weight: 700; color: var(--muted); text-align: center; }
+.interim { min-height: 1.5em; font-size: 1.1rem; color: var(--muted); font-style: italic; text-align: center; }
+.wchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.wchip { padding: 4px 9px; border-radius: 8px; font-weight: 700; border: 2px solid transparent; }
+.wchip.ok { background: var(--ok-soft); color: var(--ok); }
+.wchip.close { background: color-mix(in srgb, var(--sun) 22%, var(--card)); color: var(--ink); border-color: var(--sun); }
+.wchip.wrong, .wchip.missed { background: var(--bad-soft); color: var(--bad); border-color: var(--bad); }
+.wchip.missed { text-decoration: line-through; text-decoration-thickness: 2px; }
+.issues { display: flex; flex-direction: column; gap: 6px; }
+.issue { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 6px 6px 6px 10px; font-size: .92rem; }
+.issue .icon-btn { width: 34px; height: 34px; }
+.icon-btn.rec { background: var(--bad); color: #fff; border-color: var(--bad); animation: ring 1.4s ease-out infinite; }
+.msg.me.listening { opacity: .7; font-style: italic; }
+.msg .spoken svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; opacity: .8; }

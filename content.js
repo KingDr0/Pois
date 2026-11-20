@@ -377,7 +377,7 @@ const UNITS = [
    (formar, reservar, cercar, fossar) are left out. Tenses: present, preterite, imperfect.
    Portugal writes -ámos in the preterite of -ar verbs (falámos) and -amos in the present (falamos). */
 const PERSONS = ["eu", "tu", "ele / ela", "nós", "eles / elas"];
-const TENSES = { pres: "Presente", perf: "Pretérito perfeito", imp: "Imperfeito" };
+const TENSES = { pres: "Present", perf: "Past (preterite)", imp: "Imperfect" };
 
 const VERB_FREQ = [
 ["ser",333747],["ter",117212],["estar",65520],["fazer",47273],["ir",45510],["haver",42560],["poder",42138],["dizer",39890],["dar",27265],["ver",23316],

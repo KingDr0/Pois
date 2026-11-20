@@ -109,14 +109,14 @@ function renderGate() {
     g.innerHTML = `<button class="splash" ${ready ? 'data-a="gatecontinue"' : "disabled"} aria-label="${ready ? "Tap to continue" : "Loading"}">
       <span class="splash-mark" aria-hidden="true">P<i></i></span>
       <span class="splash-name">Pois</span>
-      <span class="splash-sub">Português de Portugal</span>
-      <span class="splash-tap">${ready ? "Toca para continuar · Tap to continue" : "A carregar…"}</span>
+      <span class="splash-sub">European Portuguese</span>
+      <span class="splash-tap">${ready ? "Tap to continue" : "Loading…"}</span>
     </button>`;
     return;
   }
   g.innerHTML = `<div class="signin">
     <span class="splash-mark small" aria-hidden="true">P<i></i></span>
-    <h1>Bem-vindo ao Pois</h1>
+    <h1>Welcome to Pois</h1>
     <p class="lead">Sign in to start learning European Portuguese.</p>
     <ul class="perks">
       <li><b>Your progress is saved:</b> streak, words and levels live in your account.</li>
@@ -261,7 +261,7 @@ setTimeout(() => { loadVoices(); VOICES_CHECKED = true; render(); }, 1800);
 const sysMode = () => HAS_TTS && !VOICE && !!S.settings.sysVoice;
 const hasVoice = () => !!VOICE || sysMode();
 function speak(text, o = {}) {
-  if (!hasVoice()) { if (!warnedVoice && VOICES_CHECKED) { warnedVoice = true; toast("Audio is off until a Portugal voice is set up. See the yellow box on Aprender."); } return Promise.resolve(); }
+  if (!hasVoice()) { if (!warnedVoice && VOICES_CHECKED) { warnedVoice = true; toast("Audio is off until a Portugal voice is set up. See the yellow box on the Learn tab."); } return Promise.resolve(); }
   return rawSpeak(text, o);
 }
 function rawSpeak(text, o = {}) {
@@ -317,6 +317,103 @@ function toggleMic(cb) {
       r.start(); MICREC = r; micState = "listening"; paintMic();
     } catch (e) { toast("The microphone isn't available here. Use your keyboard's mic instead."); }
   }
+}
+
+/* ---------- Hands-free speaking ----------
+   Listens once in pt-PT, stops by itself when you stop talking, then hands back what was heard.
+   Nothing goes into an editable box, so the result is what you actually said. */
+let LISTEN = null;
+const canListen = () => !!SRClass;
+function listenOnce({ onInterim, onDone, onError }) {
+  if (LISTEN) { try { LISTEN.abort(); } catch (e) {} LISTEN = null; }
+  let r; try { r = new SRClass(); } catch (e) { onError("unsupported"); return; }
+  r.lang = "pt-PT"; r.interimResults = true; r.continuous = false; r.maxAlternatives = 5;
+  let finalPrefix = "", lastAlts = null, interim = "", err = null, ended = false;
+  r.onresult = e => {
+    let prefix = "", inter = ""; lastAlts = null;
+    for (let i = 0; i < e.results.length; i++) {
+      const res = e.results[i];
+      if (res.isFinal) {
+        if (i === e.results.length - 1) { lastAlts = []; for (let k = 0; k < res.length; k++) lastAlts.push(res[k].transcript); finalPrefix = prefix; }
+        prefix += res[0].transcript + " ";
+      } else inter += res[0].transcript;
+    }
+    interim = (prefix + inter).trim();
+    if (onInterim) onInterim(interim);
+  };
+  r.onerror = e => { err = e.error || "error"; };
+  const finish = () => {
+    if (ended) return; ended = true; LISTEN = null; clearTimeout(cap);
+    const alts = lastAlts ? lastAlts.map(a => (finalPrefix + a).replace(/\s+/g, " ").trim()).filter(Boolean) : (interim ? [interim] : []);
+    if (alts.length) onDone([...new Set(alts)]); else onError(err || "no-speech");
+  };
+  r.onend = finish;
+  const cap = setTimeout(() => { try { r.stop(); } catch (e) {} }, 15000);
+  try { r.start(); LISTEN = r; } catch (e) { ended = true; clearTimeout(cap); onError("unsupported"); }
+}
+const stopListening = () => { if (LISTEN) { try { LISTEN.stop(); } catch (e) {} } };
+const micErr = c => c === "not-allowed" || c === "service-not-allowed" ? "Microphone access is blocked. Allow the microphone for this site in your browser settings, then try again."
+  : c === "no-speech" ? "I didn't hear anything. Tap the mic and try again."
+  : c === "audio-capture" ? "No microphone was found on this device."
+  : c === "network" ? "Speech recognition needs an internet connection."
+  : c === "unsupported" ? "This browser can't do speech recognition. Try Chrome or Safari."
+  : c === "aborted" ? "" : "Speech recognition stopped. Tap the mic to try again.";
+
+/* Word-by-word comparison of what you meant to say with what was heard. */
+const wordsOf = t => strip(String(t).replace(/-/g, " ")).split(" ").filter(Boolean);
+const wsim = (a, b) => 1 - lev(a, b) / (Math.max(a.length, b.length) || 1);
+function alignWords(target, heard) {
+  const T = wordsOf(target), H = wordsOf(heard), n = T.length, m = H.length;
+  const D = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = 1; i <= n; i++) D[i][0] = i;
+  for (let j = 1; j <= m; j++) D[0][j] = j * 0.7;
+  for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++)
+    D[i][j] = Math.min(D[i - 1][j] + 1, D[i][j - 1] + 0.7, D[i - 1][j - 1] + (1 - wsim(T[i - 1], H[j - 1])));
+  const ops = []; let i = n, j = m;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && Math.abs(D[i][j] - (D[i - 1][j - 1] + (1 - wsim(T[i - 1], H[j - 1])))) < 1e-9) {
+      const sim = wsim(T[i - 1], H[j - 1]);
+      ops.unshift({ ti: i - 1, h: H[j - 1], sim, type: sim > 0.999 ? "ok" : sim >= 0.5 ? "close" : "wrong" }); i--; j--;
+    } else if (i > 0 && (j === 0 || Math.abs(D[i][j] - (D[i - 1][j] + 1)) < 1e-9)) { ops.unshift({ ti: i - 1, h: null, sim: 0, type: "missed" }); i--; }
+    else { ops.unshift({ ti: -1, h: H[j - 1], sim: 0, type: "extra" }); j--; }
+  }
+  const tw = ops.filter(o => o.ti >= 0);
+  const score = n ? tw.reduce((a, o) => a + (o.type === "ok" ? 1 : o.type === "close" ? o.sim * 0.85 : 0), 0) / n : 0;
+  return { ops, score };
+}
+function analyseSpeech(targets, alts) {
+  let best = null;
+  for (const t of targets) for (const h of alts) {
+    const a = alignWords(t, h);
+    if (!best || a.score > best.score) best = { ...a, target: t, heard: h };
+  }
+  best.ok = best.score >= 0.8;
+  best.perfect = best.score > 0.999;
+  return best;
+}
+function speechResultHTML(a) {
+  const shown = a.target.replace(/-/g, " ").split(/\s+/).filter(w => strip(w));
+  const words = shown.length === wordsOf(a.target).length ? shown : wordsOf(a.target);
+  const byIdx = {}; a.ops.forEach(o => { if (o.ti >= 0) byIdx[o.ti] = o; });
+  const chips = words.map((w, i) => { const o = byIdx[i] || { type: "missed" };
+    const title = o.type === "ok" ? "Clear" : o.type === "missed" ? "Not heard" : `Heard: ${o.h}`;
+    return `<span class="wchip ${o.type}" title="${esc(title)}" lang="pt-PT">${esc(w)}</span>`; }).join(" ");
+  const issues = a.ops.filter(o => o.ti >= 0 && o.type !== "ok").map(o => {
+    const w = (words[o.ti] || "").replace(/[.,!?¿¡;:]/g, "");
+    return `<div class="issue"><span>${o.type === "missed" ? `<b lang="pt-PT">${esc(w)}</b> wasn't heard` : `You said <i>“${esc(o.h)}”</i>, the word is <b lang="pt-PT">${esc(w)}</b>`}</span>
+      <span class="row" style="gap:6px">${speakBtn(w)}${speakBtn(w, true)}</span></div>`; }).join("");
+  return `<div class="wchips">${chips}</div>
+    <div class="small muted">I heard: <i lang="pt-PT">“${esc(a.heard)}”</i> · ${Math.round(a.score * 100)}% match</div>
+    ${issues ? `<div class="issues">${issues}</div>` : ""}`;
+}
+async function pronunciationTip(target, a) {
+  const words = a.ops.filter(o => o.ti >= 0 && o.type !== "ok").map(o => `${wordsOf(target)[o.ti]} → heard "${o.h || "(nothing)"}"`).join("; ");
+  const prompt = `You are a friendly European Portuguese pronunciation coach.
+A learner tried to say: "${target}"
+Speech recognition heard: "${a.heard}"
+Words that didn't come through clearly: ${words || "none"}.
+In 1 to 3 short sentences in English, say which sound was probably the problem in each of those words and give one concrete tip for saying it the European Portuguese way (for example nasal vowels like ão and im, unstressed final -o sounding like "u", s before a consonant or at the end sounding like "sh", swallowed unstressed e, the lh and nh sounds, the throaty r). Be encouraging and practical. Plain text, no lists, no headings. Don't mention other countries.`;
+  return (await aiText(prompt)).trim();
 }
 
 /* ---------- AI tutor ---------- */
@@ -415,9 +512,9 @@ async function askJSON(input, opts = {}) { return parseJSON(await aiText(input, 
 const aiErr = e => {
   const c = e && e.code;
   if (c === "rate_limited") return "The AI tutor is busy or out of free requests right now. Try again in a minute.";
-  if (c === "daily_limit") return "You've used today's free tutor messages. Add your own key in Mais › Settings, or come back tomorrow.";
-  if (c === "bad_key") return "Your API key was rejected. Check it in Mais › Settings › AI tutor.";
-  if (c === "bad_model") return "That model name wasn't found. Check it in Mais › Settings › AI tutor.";
+  if (c === "daily_limit") return "You've used today's free tutor messages. Add your own key in More › Settings, or come back tomorrow.";
+  if (c === "bad_key") return "Your API key was rejected. Check it in More › Settings › AI tutor.";
+  if (c === "bad_model") return "That model name wasn't found. Check it in More › Settings › AI tutor.";
   if (c === "signin") return "Sign in with Google to use the free tutor.";
   if (c === "network") return "No connection. The AI tutor needs the internet.";
   if (c === "app_check") return "The free tutor is blocked by Firebase App Check. It needs the reCAPTCHA site key set up (see README).";
@@ -426,9 +523,9 @@ const aiErr = e => {
 };
 function aiOffMessage() {
   const st = aiState();
-  if (st === "signin") return `<p>Sign in with Google to use the free AI tutor, or add your own key in Mais › Settings.</p>${googleBtn()}`;
-  if (st === "nokey") return `<p>Add your key for ${esc(PROVIDERS[AIC.provider].co)} in Mais › Settings › AI tutor, or switch back to the built-in free tutor.</p><button class="btn" data-a="more" data-m="settings" data-tabgo="1">Open settings</button>`;
-  return `<p>The built-in tutor isn't set up on this copy of Pois. You can use your own Gemini, Claude, OpenAI or Grok key in Mais › Settings › AI tutor.</p><button class="btn" data-a="more" data-m="settings" data-tabgo="1">Open settings</button>`;
+  if (st === "signin") return `<p>Sign in with Google to use the free AI tutor, or add your own key in More › Settings.</p>${googleBtn()}`;
+  if (st === "nokey") return `<p>Add your key for ${esc(PROVIDERS[AIC.provider].co)} in More › Settings › AI tutor, or switch back to the built-in free tutor.</p><button class="btn" data-a="more" data-m="settings" data-tabgo="1">Open settings</button>`;
+  return `<p>The built-in tutor isn't set up on this copy of Pois. You can use your own Gemini, Claude, OpenAI or Grok key in More › Settings › AI tutor.</p><button class="btn" data-a="more" data-m="settings" data-tabgo="1">Open settings</button>`;
 }
 const richText = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
 
@@ -444,7 +541,7 @@ const dots = n => `<span class="dots" aria-label="Level ${n} of 3">${[1, 2, 3].m
 /* ================= Screens ================= */
 function renderTop() {
   const st = currentStreak();
-  $("#top").innerHTML = `<div class="brand">Pois<small>PORTUGUÊS DE PORTUGAL</small></div><div class="sp"></div>
+  $("#top").innerHTML = `<div class="brand">Pois<small>EUROPEAN PORTUGUESE</small></div><div class="sp"></div>
     <span class="chip" title="Day streak">${ICON.flame}<span class="num">${st}</span></span>
     ${S.freezes ? `<span class="chip" title="Streak freezes">${ICON.ice}<span class="num">${S.freezes}</span></span>` : ""}
     <span class="chip sun" title="Total XP">${ICON.bolt}<span class="num">${S.xp}</span></span>
@@ -469,7 +566,7 @@ function hueOf(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.char
 function closeMenu() { if (MENU_OPEN) { MENU_OPEN = false; renderTop(); } }
 function renderNav() {
   const due = dueKeys().length;
-  const tabs = [["learn", "Aprender"], ["review", "Rever"], ["chat", "Conversa"], ["verbs", "Verbos"], ["more", "Mais"]];
+  const tabs = [["learn", "Learn"], ["review", "Review"], ["chat", "Chat"], ["verbs", "Verbs"], ["more", "More"]];
   $("#nav").innerHTML = tabs.map(([id, label]) => `<button data-a="tab" data-tab="${id}" ${TAB === id ? 'aria-current="page"' : ""}>${ICON[id]}<span>${label}${id === "review" && due ? `<span class="badge">${due}</span>` : ""}</span></button>`).join("");
 }
 const INSTALL_HELP = `<details><summary>How to add a Portugal voice (free)</summary>
@@ -498,9 +595,9 @@ function screenLearn() {
     <svg class="ring" viewBox="0 0 76 76" role="img" aria-label="${xpToday} of ${goal} XP today"><circle class="bg" cx="38" cy="38" r="32"/><circle class="fg" cx="38" cy="38" r="32" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}"/>
     <text x="38" y="43" text-anchor="middle" font-family="var(--display)" font-weight="800" font-size="16" fill="currentColor">${xpToday}</text></svg>
     <div class="stack" style="flex:1;gap:6px">
-      <h2>${pct >= 1 ? "Objetivo cumprido!" : xpToday ? "Continua!" : "Bem-vindo!"}</h2>
+      <h2>${pct >= 1 ? "Daily goal reached!" : xpToday ? "Keep going!" : "Welcome back!"}</h2>
       <div class="muted small">${xpToday} / ${goal} XP today · ${st} day streak</div>
-      <button class="btn sun" data-a="practice" data-u="${next.id}">Continue: ${esc(next.pt)}</button>
+      <button class="btn sun" data-a="practice" data-u="${next.id}">Continue: ${esc(next.en)}</button>
     </div>
   </section>
   ${voiceBanner()}
@@ -510,13 +607,13 @@ function screenLearn() {
     <button data-a="personal"><b>${ICON.bolt.replace("<svg", '<svg width="26" height="26"')}</b>Personalised</button>
   </section>
   <section class="stack" style="gap:12px">
-    <h2>Curso A1 · Portugal</h2>
+    <h2>Beginner course (A1)</h2>
     ${UNITS.map((u, i) => { const lv = unitLevel(u.id); return `
     <article class="card unit">
       <div class="tileno ${lv >= 3 ? "done" : ""}">${i + 1}</div>
       <div>
-        <div class="row" style="justify-content:space-between"><h3 lang="pt-PT">${esc(u.pt)}</h3>${dots(lv)}</div>
-        <div class="muted small">${esc(u.en)} · ${u.words.length + u.phrases.length} items</div>
+        <div class="row" style="justify-content:space-between"><h3>${esc(u.en)}</h3>${dots(lv)}</div>
+        <div class="muted small"><span lang="pt-PT">${esc(u.pt)}</span> · ${u.words.length + u.phrases.length} words &amp; phrases</div>
         <div class="acts">
           <button class="btn ghost" data-a="study" data-u="${u.id}">Study</button>
           <button class="btn" data-a="practice" data-u="${u.id}">${lv === 0 ? "Start" : lv >= 3 ? "Practise" : `Level ${lv + 1}`}</button>
@@ -534,7 +631,7 @@ function screenReview() {
   const custom = Object.entries(S.custom);
   return `
   <section class="card stack">
-    <h2>Revisão inteligente</h2>
+    <h2>Smart review</h2>
     <p class="muted small" style="margin:0">Spaced repetition: each word comes back just before you'd forget it.</p>
     <div class="grid2">
       <button class="btn" data-a="flash" ${due.length ? "" : "disabled"}>Flashcards (${due.length})</button>
@@ -554,7 +651,7 @@ function screenReview() {
   </section>
   <section class="card stack">
     <h3>Saved phrases</h3>
-    <p class="muted small" style="margin:0">Add anything from the translator in Conversa, or type your own.</p>
+    <p class="muted small" style="margin:0">Add anything from the translator in Chat, or type your own.</p>
     <div class="grid2"><input type="text" id="cpt" placeholder="Portuguese" lang="pt-PT"><input type="text" id="cen" placeholder="English"></div>
     <button class="btn ghost" data-a="addcustom">Add to review</button>
     ${custom.length ? `<table class="tbl">${custom.map(([k, c]) => `<tr><td lang="pt-PT" class="pt">${esc(c.pt)}</td><td>${esc(c.en)}</td><td style="width:40px"><button class="icon-btn" data-a="delcustom" data-k="${esc(k)}" aria-label="Delete">${ICON.close}</button></td></tr>`).join("")}</table>` : ""}
@@ -562,11 +659,11 @@ function screenReview() {
 }
 function fmtWhen(t) { const m = Math.round((t - Date.now()) / 60e3); if (m < 60) return `in ${m} min`; const h = Math.round(m / 60); if (h < 24) return `in ${h} h`; return `in ${Math.round(h / 24)} days`; }
 
-/* ---------- Conversa (AI) ---------- */
+/* ---------- Chat (AI) ---------- */
 const CH = { mode: "free", scenario: null, msgs: [], busy: false, started: false, showSugg: false, trans: { dir: "en", out: null, busy: false }, asks: [], askBusy: false };
 function screenChat() {
-  if (!AI) return `<section class="card stack"><h2>Conversa</h2><p class="muted" style="margin:0">Chat with Rita, roleplays, the translator and grammar help use an AI tutor.</p>${aiOffMessage()}</section>`;
-  const modes = [["free", "Conversa livre"], ["role", "Roleplay"], ["trans", "Tradutor"], ["ask", "Gramática"]];
+  if (!AI) return `<section class="card stack"><h2>Chat</h2><p class="muted" style="margin:0">Chat with Rita, roleplays, the translator and grammar help use an AI tutor.</p>${aiOffMessage()}</section>`;
+  const modes = [["free", "Free chat"], ["role", "Roleplay"], ["trans", "Translator"], ["ask", "Grammar"]];
   let body = "";
   if (CH.mode === "trans") body = chatTranslator();
   else if (CH.mode === "ask") body = chatAsk();
@@ -576,7 +673,7 @@ function screenChat() {
 }
 function levelSeg() { return `<div class="seg" role="group" aria-label="Level">${["A1", "A2", "B1"].map(l => `<button data-a="level" data-l="${l}" aria-pressed="${S.settings.level === l}">${l}</button>`).join("")}</div>`; }
 function chatStart() {
-  if (CH.mode === "free") return `<section class="card stack"><h2>Fala com a Rita</h2><p style="margin:0">Rita is from Lisbon. Chat about anything; she corrects your Portuguese as you go and only uses Portugal Portuguese.</p>${levelSeg()}<button class="btn sun" data-a="chstart">Começar conversa</button></section>`;
+  if (CH.mode === "free") return `<section class="card stack"><h2>Chat with Rita</h2><p style="margin:0">Rita is from Lisbon. Chat about anything; she corrects your Portuguese as you go and only uses Portugal Portuguese.</p>${levelSeg()}<button class="btn sun" data-a="chstart">Start chatting</button></section>`;
   return `<section class="stack"><div class="row" style="justify-content:space-between"><h2>Roleplay</h2>${levelSeg()}</div>
   ${SCENARIOS.map(s => `<button class="card" style="text-align:left" data-a="chstart" data-s="${s.id}"><h3>${esc(s.t)}</h3><div class="muted small">${esc(s.where)}</div><div class="small" style="margin-top:4px"><b>Goal:</b> ${esc(s.goal)}</div></button>`).join("")}</section>`;
 }
@@ -584,22 +681,23 @@ function chatThread() {
   const sc = CH.scenario && SCENARIOS.find(s => s.id === CH.scenario);
   const last = [...CH.msgs].reverse().find(m => m.role === "ai");
   return `<section class="stack">
-    <div class="row" style="justify-content:space-between"><div><h3>${sc ? esc(sc.t) : "Conversa com a Rita"}</h3>${sc ? `<div class="small muted">Goal: ${esc(sc.goal)}</div>` : ""}</div><button class="btn ghost" data-a="chreset">New</button></div>
+    <div class="row" style="justify-content:space-between"><div><h3>${sc ? esc(sc.t) : "Chat with Rita"}</h3>${sc ? `<div class="small muted">Goal: ${esc(sc.goal)}</div>` : ""}</div><button class="btn ghost" data-a="chreset">New</button></div>
     <div class="chat" aria-live="polite">${CH.msgs.map((m, i) => m.role === "ai" ? `
       <div class="msg ai"><div lang="pt-PT">${esc(m.text)}</div>${m.showTr ? `<div class="tr">${esc(m.tr)}</div>` : ""}
-      <div class="tools"><button data-a="say" data-t="${esc(m.text)}">Ouvir</button><button data-a="say" data-slow="1" data-t="${esc(m.text)}">Devagar</button><button data-a="chtr" data-i="${i}">${m.showTr ? "Hide" : "English"}</button><button data-a="chsave" data-i="${i}">Save</button></div></div>
-      ${m.done ? `<div class="banner info">Goal reached. Muito bem! Start a new roleplay or keep chatting.</div>` : ""}` :
-      `<div class="msg me" lang="pt-PT">${esc(m.text)}</div>${m.fix ? `<div class="fix"><b lang="pt-PT">${esc(m.fix.corrected)}</b><br>${esc(m.fix.explanation)}
-        <div class="tools"><button data-a="say" data-t="${esc(m.fix.corrected)}">Ouvir</button><button data-a="say" data-slow="1" data-t="${esc(m.fix.corrected)}">Devagar</button></div></div>` : ""}`).join("")}
-      ${CH.busy ? `<div class="msg ai typing">A escrever…</div>` : ""}
+      <div class="tools"><button data-a="say" data-t="${esc(m.text)}">Listen</button><button data-a="say" data-slow="1" data-t="${esc(m.text)}">Slow</button><button data-a="chtr" data-i="${i}">${m.showTr ? "Hide" : "English"}</button><button data-a="chsave" data-i="${i}">Save</button></div></div>
+      ${m.done ? `<div class="banner info">Goal reached. Well done! Start a new roleplay or keep chatting.</div>` : ""}` :
+      `<div class="msg me" lang="pt-PT">${m.spoken ? `<span class="spoken" title="Spoken">${ICON.mic}</span>` : ""}${esc(m.text)}</div>${m.fix ? `<div class="fix"><b lang="pt-PT">${esc(m.fix.corrected)}</b><br>${esc(m.fix.explanation)}
+        <div class="tools"><button data-a="say" data-t="${esc(m.fix.corrected)}">Listen</button><button data-a="say" data-slow="1" data-t="${esc(m.fix.corrected)}">Slow</button></div></div>` : ""}`).join("")}
+      ${CH.busy ? `<div class="msg ai typing">Rita is typing…</div>` : ""}
     </div>
     ${last && last.sugg && last.sugg.length && !CH.busy ? (CH.showSugg ? `<div class="sugg">${last.sugg.map(s => `<button data-a="chsugg" data-t="${esc(s)}" lang="pt-PT">${esc(s)}</button>`).join("")}</div>` : `<button class="btn ghost" data-a="chhelp">Help me reply</button>`) : ""}
     <div class="composer">
-      <textarea id="chin" rows="1" lang="pt-PT" placeholder="Escreve em português…" aria-label="Your message"></textarea>
-      ${canMic() ? `<button class="icon-btn" data-a="mic" data-target="chin" aria-label="Dictate">${ICON.mic}</button>` : ""}
+      <textarea id="chin" rows="1" lang="pt-PT" placeholder="Write in Portuguese…" aria-label="Your message"></textarea>
+      ${canListen() ? `<button class="icon-btn ${CH.listening ? "rec" : ""}" data-a="chmic" aria-label="${CH.listening ? "Stop listening" : "Speak your reply"}">${ICON.mic}</button>` : ""}
       <button class="icon-btn" style="background:var(--tile);color:var(--card);border:0" data-a="chsend" aria-label="Send" ${CH.busy ? "disabled" : ""}>${ICON.send}</button>
     </div>
-    <p class="muted small" style="margin:0">Tip: to speak instead of type, add the Português (Portugal) keyboard and tap its mic.</p>
+    ${CH.listening ? `<div class="msg me listening" lang="pt-PT"><span id="chinterim">${esc(CH.interim || "Listening…")}</span></div>` : ""}
+    <p class="muted small" style="margin:0">${canListen() ? "Tap the mic and just talk. Rita gets exactly what she heard, so unclear words show up in her corrections." : "Type your reply in Portuguese."}</p>
   </section>`;
 }
 function chatSystem() {
@@ -610,13 +708,14 @@ function chatSystem() {
   return `${who}
 ${PT_RULES}
 ${LEVELS[S.settings.level] || LEVELS.A1}
+Messages starting with [spoken, transcribed by speech recognition] were said out loud. If a word in one looks like a mis-recognition of a Portuguese word (for example "sing" for "sim", or an English-looking word), assume they were trying to say that Portuguese word: reply to what they meant, put the intended sentence in correction.corrected, and in correction.explanation name the word that didn't come through and give one short tip on pronouncing it the European Portuguese way.
 If the learner writes in English or gets stuck, stay in Portuguese and show them in "correction" how to say what they meant.
 Reply with ONLY a JSON object and no other text:
 {"reply": "your next line in European Portuguese, 1 to 3 sentences", "translation": "English translation of reply", "correction": null if the learner's last message was correct, natural European Portuguese (or there is none yet), otherwise {"corrected": "their message rewritten in natural European Portuguese", "explanation": "one or two short English sentences on what changed; if they used a word or form not used in Portugal, give the Portugal one without mentioning other countries"}, "suggestions": ["three short possible replies the learner could give next, in European Portuguese, at their level"], "goal_done": false}`;
 }
 function chatInput() {
   const arr = [{ role: "user", content: chatSystem() + "\n\nStart the conversation now with your first line." }];
-  CH.msgs.forEach(m => arr.push(m.role === "ai" ? { role: "assistant", content: JSON.stringify({ reply: m.text, translation: m.tr }) } : { role: "user", content: m.text }));
+  CH.msgs.forEach(m => arr.push(m.role === "ai" ? { role: "assistant", content: JSON.stringify({ reply: m.text, translation: m.tr }) } : { role: "user", content: m.spoken ? `[spoken, transcribed by speech recognition] ${m.text}` : m.text }));
   return arr;
 }
 async function chatTurn() {
@@ -633,7 +732,7 @@ async function chatTurn() {
 }
 function chatTranslator() {
   const T = CH.trans, o = T.out;
-  return `<section class="card stack"><h2>Tradutor</h2>
+  return `<section class="card stack"><h2>Translator</h2>
     <div class="seg" role="group"><button data-a="trdir" data-d="en" aria-pressed="${T.dir === "en"}">English › Portugal PT</button><button data-a="trdir" data-d="pt" aria-pressed="${T.dir === "pt"}">Check my Portuguese</button></div>
     <textarea id="trin" rows="3" ${T.dir === "pt" ? 'lang="pt-PT"' : ""} placeholder="${T.dir === "en" ? "Type English, e.g. Where can I catch the bus to Belém?" : "Paste or write Portuguese to translate it and see how a Portuguese person would say it"}"></textarea>
     <button class="btn" data-a="trgo" ${T.busy ? "disabled" : ""}>${T.busy ? "Translating…" : "Translate"}</button>
@@ -648,7 +747,7 @@ function chatTranslator() {
   </section>`;
 }
 function chatAsk() {
-  return `<section class="card stack"><h2>Pergunta de gramática</h2>
+  return `<section class="card stack"><h2>Ask a grammar question</h2>
     <p class="muted small" style="margin:0">Ask anything: "When do I use ser vs estar?", "Why chamo-me and not me chamo?"</p>
     <textarea id="askin" rows="2" placeholder="Your question"></textarea>
     <button class="btn" data-a="askgo" ${CH.askBusy ? "disabled" : ""}>${CH.askBusy ? "Thinking…" : "Ask"}</button></section>
@@ -717,7 +816,7 @@ function verbDrill() {
     <div class="muted small">${esc(VERB_EN[q.v] || "")} · <span class="num">${rankLabel(q.v)}</span>${VERB_RANK[q.v] ? " most used" : ""}</div>
     <input type="text" id="vin" lang="pt-PT" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the form" aria-label="Your answer" ${VB.fb ? "disabled" : ""}>
     ${VB.fb ? "" : accentBar("vin")}
-    ${VB.fb ? `<div class="banner" style="${VB.fb.ok ? "background:var(--ok-soft)" : "background:var(--bad-soft)"};color:var(--ink)"><b>${VB.fb.ok ? "Certo!" : "Not quite."}</b> <span lang="pt-PT">${PERSONS[q.p].split(" ")[0]} <b>${esc(q.ans)}</b></span>${VB.fb.note ? `<br>${VB.fb.note}` : ""}${VB.fb.ok && vMastered(q.v) && VB.fb.newly ? `<br><b lang="pt-PT">${esc(q.v)}</b> mastered!` : ""}</div>
+    ${VB.fb ? `<div class="banner" style="${VB.fb.ok ? "background:var(--ok-soft)" : "background:var(--bad-soft)"};color:var(--ink)"><b>${VB.fb.ok ? "Correct!" : "Not quite."}</b> <span lang="pt-PT">${PERSONS[q.p].split(" ")[0]} <b>${esc(q.ans)}</b></span>${VB.fb.note ? `<br>${VB.fb.note}` : ""}${VB.fb.ok && vMastered(q.v) && VB.fb.newly ? `<br><b lang="pt-PT">${esc(q.v)}</b> mastered!` : ""}</div>
       <button class="btn wide" data-a="vnext">Next</button>` : `<button class="btn wide" data-a="vcheck">Check</button>`}
     <div class="small muted">Accuracy: ${S.stats.verbAns ? Math.round(100 * S.stats.verbOk / S.stats.verbAns) : 0}% of ${S.stats.verbAns}</div>
   </section>`;
@@ -732,23 +831,23 @@ function screenMore() {
   if (MORE === "progress") return progressScreen();
   if (MORE === "settings") return settingsScreen();
   if (MORE === "about") return aboutScreen();
-  const items = [["listen", "Ouvir · Dialogues", "Real situations in Portugal with transcripts and translations"], ["sounds", "Pronúncia", "The sounds that make Portugal Portuguese different"], ["progress", "Progress", "Streak, XP history, accuracy"], ["settings", "Settings", "AI tutor, voice, speed, daily goal"], ["about", "What's included", "The premium features from other apps, here for free"]];
+  const items = [["listen", "Dialogues", "Real situations in Portugal with transcripts and translations"], ["sounds", "Pronunciation", "The sounds that make Portugal Portuguese different"], ["progress", "Progress", "Streak, XP history, accuracy"], ["settings", "Settings", "AI tutor, voice, speed, daily goal"], ["about", "What's included", "The premium features from other apps, here for free"]];
   const acct = !CLOUD_READY ? "" : USER
     ? `<section class="card row">${USER.photo ? `<img src="${esc(USER.photo)}" alt="" width="44" height="44" style="border-radius:50%" referrerpolicy="no-referrer">` : ""}<div style="flex:1;min-width:0"><b>${esc(USER.name || "Signed in")}</b><div class="small muted" style="overflow:hidden;text-overflow:ellipsis">${esc(USER.email)}</div></div><button class="btn ghost" data-a="signout">Sign out</button></section>`
     : `<section class="card stack"><b>Your account</b><div class="small muted">${syncText()}</div>${googleBtn()}</section>`;
   return `${acct}<section class="stack">${items.map(([id, t, d]) => `<button class="card" style="text-align:left" data-a="more" data-m="${id}"><h3>${t}</h3><div class="muted small">${d}</div></button>`).join("")}</section>`;
 }
-const backBtn = () => `<button class="btn ghost" data-a="more" data-m="menu" style="align-self:flex-start">${ICON.back.replace("<svg", '<svg width="16" height="16" style="vertical-align:-3px"')} Mais</button>`;
+const backBtn = () => `<button class="btn ghost" data-a="more" data-m="menu" style="align-self:flex-start">${ICON.back.replace("<svg", '<svg width="16" height="16" style="vertical-align:-3px"')} More</button>`;
 function allDialogues() { return [...DIALOGUES, ...S.gen]; }
 function listenScreen() {
-  return `${backBtn()}<h2>Ouvir</h2>
-  ${allDialogues().map(d => `<button class="card" style="text-align:left" data-a="dlg" data-id="${esc(d.id)}"><h3 lang="pt-PT">${esc(d.title)}</h3><div class="muted small">${esc(d.en)} · ${d.lines.length} lines${d.gen ? " · made by the tutor" : ""}</div></button>`).join("")}
+  return `${backBtn()}<h2>Dialogues</h2>
+  ${allDialogues().map(d => `<button class="card" style="text-align:left" data-a="dlg" data-id="${esc(d.id)}"><h3>${esc(d.en)}</h3><div class="muted small"><span lang="pt-PT">${esc(d.title)}</span> · ${d.lines.length} lines${d.gen ? " · made by the tutor" : ""}</div></button>`).join("")}
   ${AI ? `<section class="card stack"><h3>Make a new dialogue</h3><input type="text" id="gtopic" placeholder="Topic, e.g. at the hairdresser, at the beach in Algarve"><div class="row" style="justify-content:space-between">${levelSeg()}<button class="btn" data-a="gendlg" ${GEN_BUSY ? "disabled" : ""}>${GEN_BUSY ? "Writing…" : "Create"}</button></div></section>` : ""}`;
 }
 let GEN_BUSY = false, PLAYING = false;
 function dialogueScreen() {
   const d = DLG.d;
-  return `<button class="btn ghost" data-a="more" data-m="listen" style="align-self:flex-start">${ICON.back.replace("<svg", '<svg width="16" height="16" style="vertical-align:-3px"')} Ouvir</button>
+  return `<button class="btn ghost" data-a="more" data-m="listen" style="align-self:flex-start">${ICON.back.replace("<svg", '<svg width="16" height="16" style="vertical-align:-3px"')} Dialogues</button>
   <section class="card stack"><div class="row"><div style="flex:1"><h2 lang="pt-PT">${esc(d.title)}</h2><div class="muted small">${esc(d.en)}</div></div>
     <button class="icon-btn big" data-a="playall" aria-label="${PLAYING ? "Stop" : "Play all"}">${PLAYING ? ICON.stop : ICON.play}</button></div>
     <div class="seg"><button data-a="dlgtr" aria-pressed="${DLG.tr}">Show English</button><button data-a="dlghide" aria-pressed="${DLG.hide}">Hide Portuguese (listening test)</button></div>
@@ -780,7 +879,7 @@ async function playAll() {
   PLAYING = false; DLG.cur = -1; render();
 }
 function soundsScreen() {
-  return `${backBtn()}<h2>Pronúncia de Portugal</h2>${voiceBanner()}
+  return `${backBtn()}<h2>Pronunciation</h2>${voiceBanner()}
   ${SOUNDS.map(s => `<section class="card stack"><h3>${esc(s.t)}</h3><p style="margin:0">${esc(s.d)}</p><div class="small muted">${esc(s.hint)}</div>
   <div class="row wrap">${s.ex.map(w => `<button class="btn ghost" data-a="say" data-t="${esc(w)}" lang="pt-PT">${esc(w)}</button><button class="icon-btn" data-a="say" data-slow="1" data-t="${esc(w)}" aria-label="Play ${esc(w)} slowly">${ICON.slow}</button>`).join("")}</div></section>`).join("")}`;
 }
@@ -829,15 +928,15 @@ function settingsScreen() {
 function aboutScreen() {
   const rows = [
     ["Unlimited lessons, no hearts, no ads", "Duolingo Super, Memrise Pro", "Every unit open from day one"],
-    ["Mistakes review & personalised practice", "Duolingo Super, Busuu Premium Plus (Mistake Repair)", "Rever › Fix mistakes / Personalised"],
+    ["Mistakes review & personalised practice", "Duolingo Super, Busuu Premium Plus (Mistake Repair)", "Review › Fix mistakes / Personalised"],
     ["Explain my answer", "Duolingo Max (now free there too)", "Button after any wrong answer"],
-    ["AI conversation partner", "Duolingo Max (Video Call), Busuu Premium Plus, Memrise Pro", "Conversa › Conversa livre"],
-    ["Roleplay scenarios with feedback", "Duolingo Max, Memrise Role Play Buddy", "Conversa › Roleplay, 8 Portugal scenarios"],
-    ["Spaced-repetition review", "Babbel Review Manager, Practice Portuguese Smart Review", "Rever › Flashcards & quiz"],
-    ["Speaking practice", "Babbel, Busuu, Memrise", "Speaking exercises in the harder levels (mic or keyboard dictation)"],
-    ["Verb conjugation trainer", "Practice Portuguese Verbs, Memrise Conjugation Buddy", `Verbos: ${VERB_LIST.length} verbs, 3 tenses`],
-    ["Translator that saves to review", "Practice Portuguese, Memrise Translator Buddy", "Conversa › Tradutor"],
-    ["Dialogues with transcripts & translations", "Practice Portuguese Premium", "Mais › Ouvir, plus unlimited new ones"],
+    ["AI conversation partner", "Duolingo Max (Video Call), Busuu Premium Plus, Memrise Pro", "Chat › Free chat"],
+    ["Roleplay scenarios with feedback", "Duolingo Max, Memrise Role Play Buddy", "Chat › Roleplay, 8 Portugal scenarios"],
+    ["Spaced-repetition review", "Babbel Review Manager, Practice Portuguese Smart Review", "Review › Flashcards & quiz"],
+    ["Speaking practice", "Babbel, Busuu, Memrise", "Hands-free speaking with word-by-word pronunciation feedback"],
+    ["Verb conjugation trainer", "Practice Portuguese Verbs, Memrise Conjugation Buddy", `Verbs: ${VERB_LIST.length} verbs, 3 tenses`],
+    ["Translator that saves to review", "Practice Portuguese, Memrise Translator Buddy", "Chat › Translator"],
+    ["Dialogues with transcripts & translations", "Practice Portuguese Premium", "More › Dialogues, plus unlimited new ones"],
     ["Grammar tips & cultural notes", "Babbel, Busuu", "Study cards in every unit"],
     ["Streak freezes", "Duolingo Super", "Earned every 7 days, hold up to 2"],
     ["Accounts & sync across devices", "All paid apps", "Sign in with Google"]
@@ -887,7 +986,7 @@ function distractors(it, field, n = 3) {
   return out;
 }
 function prepEx() {
-  const e = L.ex[L.i]; L.state = "ask"; L.sel = null; L.fb = null; L.text = "";
+  const e = L.ex[L.i]; L.state = "ask"; L.sel = null; L.fb = null; L.text = ""; L.sp = null; stopListening();
   if (e.type === "cloze") e.opts = e.opts || shuffle([e.item.form, ...shuffle([...new Set(Object.values(ITEMS).filter(x => x.form && strip(x.form) !== strip(e.item.form)).map(x => x.form))]).slice(0, 3)]);
   if (e.type === "pt2en") e.opts = e.opts || shuffle([e.item.en, ...distractors(e.item, "en")]);
   if (e.type === "en2pt" || e.type === "listen") e.opts = e.opts || shuffle([e.item.pt, ...distractors(e.item, "pt")]);
@@ -909,14 +1008,25 @@ function exBody(e) {
     case "pt2en": return `<div class="kind">Translate</div><div class="hear">${speakBtn(it.pt)}<div class="prompt" lang="pt-PT">${esc(it.pt)}</div></div>${opts(e.opts)}`;
     case "en2pt": return `<div class="kind">How do you say…</div><div class="prompt">${esc(it.en)}</div>${opts(e.opts, true)}`;
     case "listen": return `<div class="kind">Listen and choose</div><div class="hear"><button class="icon-btn big" data-a="say" data-t="${esc(it.pt)}" aria-label="Play">${ICON.speak}</button>${speakBtn(it.pt, true)}</div>${opts(e.opts, true)}`;
-    case "listenType": return `<div class="kind">Type what you hear</div><div class="hear"><button class="icon-btn big" data-a="say" data-t="${esc(it.pt)}" aria-label="Play">${ICON.speak}</button>${speakBtn(it.pt, true)}</div>${input("Escreve em português")}`;
-    case "type": return `<div class="kind">Write in Portuguese (Portugal)</div><div class="prompt">${esc(it.en)}</div>${input("Escreve em português")}`;
+    case "listenType": return `<div class="kind">Type what you hear</div><div class="hear"><button class="icon-btn big" data-a="say" data-t="${esc(it.pt)}" aria-label="Play">${ICON.speak}</button>${speakBtn(it.pt, true)}</div>${input("Write in Portuguese")}`;
+    case "type": return `<div class="kind">Write in Portuguese (Portugal)</div><div class="prompt">${esc(it.en)}</div>${input("Write in Portuguese")}`;
     case "build": return `<div class="kind">Build the sentence</div><div class="prompt">${esc(it.en)}</div>
       <div class="bank answer-line" aria-label="Your sentence">${L.built.map(bi => `<button class="tok" data-a="unbuild" data-i="${bi}" lang="pt-PT" ${L.state === "fb" ? "disabled" : ""}>${esc(e.bank[bi].t)}</button>`).join("")}</div>
       <div class="bank">${e.bank.map((b, i) => `<button class="tok ${L.built.includes(i) ? "used" : ""}" data-a="build" data-i="${i}" lang="pt-PT" ${L.state === "fb" ? "disabled" : ""}>${esc(b.t)}</button>`).join("")}</div>`;
-    case "speak": return `<div class="kind">Say it out loud</div><div class="hear">${speakBtn(it.pt)}${speakBtn(it.pt, true)}<div><div class="prompt" lang="pt-PT">${esc(it.pt)}</div><div class="muted">${esc(it.en)}</div></div></div>
-      <div class="row">${canMic() ? `<button class="icon-btn big" data-a="mic" data-target="ans" aria-label="Speak">${ICON.mic}</button>` : ""}<textarea id="ans" rows="2" lang="pt-PT" placeholder="${canMic() ? "Tap the mic, or use your keyboard's mic" : "Tap your keyboard's mic and say it"}" aria-label="What you said" ${L.state === "fb" ? "disabled" : ""}>${esc(L.text)}</textarea></div>
-      ${L.state === "fb" ? "" : `<button class="btn ghost" data-a="skipspeak">Can't speak now</button>`}`;
+    case "speak": {
+      const sp = L.sp || (L.sp = { phase: "idle", interim: "", tries: 0 });
+      const head = `<div class="kind">Say it out loud</div><div class="hear">${speakBtn(it.pt)}${speakBtn(it.pt, true)}<div><div class="prompt" lang="pt-PT">${esc(it.pt)}</div><div class="muted">${esc(it.en)}</div></div></div>`;
+      if (!canListen()) return head + `<div class="banner info small">Hands-free speaking needs Chrome or Safari. For now, tap your keyboard's mic and say it.</div>
+        <textarea id="ans" rows="2" lang="pt-PT" placeholder="Say it with your keyboard's mic" aria-label="What you said" ${L.state === "fb" ? "disabled" : ""}>${esc(L.text)}</textarea>
+        ${L.state === "fb" ? "" : `<button class="btn ghost" data-a="skipspeak">Can't speak now</button>`}`;
+      const on = sp.phase === "listening";
+      return head + `<div class="mic-zone">
+        <button class="mic-big ${on ? "on" : ""}" data-a="spk" aria-label="${on ? "Listening. Tap to stop" : "Tap and speak"}">${ICON.mic}</button>
+        <div class="mic-hint">${on ? "Listening… say the sentence. It stops when you finish." : sp.phase === "processing" ? "Checking…" : L.state === "fb" ? "Tap the mic to try again" : "Tap the mic and say the sentence"}</div>
+        <div class="interim" id="interim" lang="pt-PT">${esc(sp.interim || "")}</div>
+      </div>
+      ${L.state === "fb" || on ? "" : `<button class="btn ghost" data-a="skipspeak">Can't speak now</button>`}`;
+    }
     case "match": { const m = L.m; const btn = (it2, side) => { const sel = side === "l" ? m.l : m.r; const gone = m.done.has(it2.key); const fl = m.flash && m.flash.includes(side + it2.key); return `<button class="opt ${gone ? "gone" : ""} ${fl ? "miss" : ""}" data-a="match" data-side="${side}" data-k="${esc(it2.key)}" aria-pressed="${sel === it2.key}" ${side === "l" ? 'lang="pt-PT"' : ""}>${esc(side === "l" ? it2.pt : it2.en)}</button>`; };
       return `<div class="kind">Match the pairs</div><div class="pairs"><div class="col">${m.left.map(x => btn(x, "l")).join("")}</div><div class="col">${m.right.map(x => btn(x, "r")).join("")}</div></div>`; }
   }
@@ -928,17 +1038,18 @@ function canCheck(e) {
   if (e.type === "match") return false;
   return L.text.trim().length > 0;
 }
-const PRAISE = ["Muito bem!", "Excelente!", "Isso mesmo!", "Boa!", "Perfeito!", "Certíssimo!"];
+const PRAISE = [["Muito bem!", "Well done"], ["Excelente!", "Excellent"], ["Isso mesmo!", "That's it"], ["Boa!", "Nice"], ["Perfeito!", "Perfect"]];
+const praise = () => { const [pt, en] = rand(PRAISE); return `<span lang="pt-PT">${pt}</span> <span class="praise-en">${en}</span>`; };
 function renderLesson(autoplay) {
   const ov = $("#ov"); ov.hidden = false;
   if (L.state === "end") {
     const r = L.result;
     ov.innerHTML = `<div class="obody" style="justify-content:center;text-align:center;align-items:center">
-      <h1 style="font-size:2rem">Lição concluída!</h1>
+      <h1 style="font-size:2rem">Lesson complete!</h1>
       <div class="grid2" style="width:100%;max-width:360px"><div class="card"><b class="num" style="font-family:var(--display);font-size:1.8rem;color:var(--sun)">+${r.xp}</b><div class="small muted">XP</div></div><div class="card"><b class="num" style="font-family:var(--display);font-size:1.8rem">${Math.round(r.acc * 100)}%</b><div class="small muted">first-try accuracy</div></div></div>
       ${r.up ? `<div class="banner">Level up! ${esc(r.up)}</div>` : ""}
-      <p class="muted">${r.acc === 1 ? "Perfect lesson. Bónus +5 XP." : "Every mistake goes into your review queue."}</p></div>
-      <div class="ofoot"><button class="btn sun wide" data-a="close">Continuar</button></div>`;
+      <p class="muted">${r.acc === 1 ? "Perfect lesson. Bonus +5 XP." : "Every mistake goes into your review queue."}</p></div>
+      <div class="ofoot"><button class="btn sun wide" data-a="close">Continue</button></div>`;
     return;
   }
   const e = L.ex[L.i];
@@ -946,13 +1057,18 @@ function renderLesson(autoplay) {
   ov.innerHTML = `<div class="ohead"><button class="icon-btn" data-a="close" aria-label="Quit lesson">${ICON.close}</button><div class="bar" role="progressbar" aria-valuenow="${L.i}" aria-valuemax="${L.ex.length}"><i style="width:${100 * L.i / L.ex.length}%"></i></div></div>
   <div class="obody">${exBody(e)}</div>
   <div class="ofoot ${fb ? (fb.ok ? "good" : "wrong") : ""}">
-    ${fb ? `<h3>${fb.ok ? rand(PRAISE) : fb.skip ? "Skipped" : "Resposta certa:"}</h3>
+    ${fb && fb.speech ? `<h3>${fb.speech.perfect ? praise() : fb.ok ? `Nearly perfect <span class="praise-en">${Math.round(fb.speech.score * 100)}%</span>` : "Not quite. Listen and try again"}</h3>
+      ${speechResultHTML(fb.speech)}
+      ${fb.tip ? `<div class="tip">${richText(fb.tip)}</div>` : fb.tipBusy ? `<div class="small muted">Getting a pronunciation tip…</div>` : ""}
+      ${fb.firstTryMissed && fb.ok ? `<div class="small muted">Got it on try ${L.sp.tries}. It still goes into your review queue.</div>` : ""}
+      <div class="grid2"><button class="btn ghost" data-a="spk">Try again</button><button class="btn ${fb.ok ? "ok" : "bad"}" data-a="next">Continue</button></div>`
+    : fb ? `<h3>${fb.ok ? praise() : fb.skip ? "Skipped" : "Correct answer:"}</h3>
       ${!fb.ok || fb.shown ? `<div class="row"><div><div class="pt" lang="pt-PT">${esc(e.item ? e.item.pt : "")}</div><div class="small">${esc(e.item ? e.item.en : "")}</div></div>${e.item ? speakBtn(e.item.pt) : ""}</div>` : ""}
       ${fb.note ? `<div class="small">${fb.note}</div>` : ""}
       ${e.item && e.item.tip ? `<div class="tip">${esc(e.item.tip)}</div>` : ""}
       ${!fb.ok && !fb.skip && AI ? `<div id="explain">${L.explain ? `<div class="small">${richText(L.explain)}</div>` : `<button class="btn ghost" data-a="explain">Explain my answer</button>`}</div>` : ""}
-      <button class="btn ${fb.ok || fb.skip ? "ok" : "bad"} wide" data-a="next">Continuar</button>`
-      : e.type === "match" ? `<div class="small muted">Tap a Portuguese word, then its meaning.</div>` : `<button class="btn wide" data-a="check" ${canCheck(e) ? "" : "disabled"}>Verificar</button>`}
+      <button class="btn ${fb.ok || fb.skip ? "ok" : "bad"} wide" data-a="next">Continue</button>`
+      : e.type === "match" ? `<div class="small muted">Tap a Portuguese word, then its meaning.</div>` : e.type === "speak" && canListen() ? `<div class="small muted">Speak the sentence. Pois listens, stops when you finish and checks every word.</div>` : `<button class="btn wide" data-a="check" ${canCheck(e) ? "" : "disabled"}>Check</button>`}
   </div>`;
   const ta = $("#ans"); if (ta && L.state !== "fb") { ta.addEventListener("input", () => { L.text = ta.value; const c = $("[data-a=check]"); if (c) c.disabled = !canCheck(e); }); }
   if (autoplay && S.settings.autoplay && L.state === "ask" && e.item && ["pt2en", "listen", "listenType"].includes(e.type)) speak(e.item.pt);
@@ -1018,7 +1134,7 @@ const wotdIndex = (d = new Date()) => Math.floor(Date.UTC(d.getFullYear(), d.get
 function wotdCard() {
   const i = wotdIndex(), w = WOTD[i], done = S.wotdDone[today()];
   return `<button class="card wotd-card" data-a="wotd" style="text-align:left">
-    <div class="row" style="justify-content:space-between"><span class="kind">Palavra do dia</span>${done ? `<span class="flag">PRACTISED</span>` : `<span class="chip sun small">+XP</span>`}</div>
+    <div class="row" style="justify-content:space-between"><span class="kind">Word of the day</span>${done ? `<span class="flag">PRACTISED</span>` : `<span class="chip sun small">+XP</span>`}</div>
     <div class="row" style="gap:8px;margin-top:4px"><h2 lang="pt-PT">${esc(w.pt)}</h2></div><div class="muted">${esc(w.en)}</div></button>`;
 }
 function maybeWelcome() {
@@ -1028,7 +1144,7 @@ function maybeWelcome() {
   openWotd(true);
 }
 function openWotd(welcome) { W = { i: wotdIndex(), welcome: !!welcome, mine: "", fb: null, busy: false, more: [], moreBusy: false }; renderWotd(); }
-const greeting = () => { const h = new Date().getHours(); return h < 12 ? "Bom dia!" : h < 20 ? "Boa tarde!" : "Boa noite!"; };
+const greeting = () => { const h = new Date().getHours(); const [pt, en] = h < 12 ? ["Bom dia!", "Good morning"] : h < 20 ? ["Boa tarde!", "Good afternoon"] : ["Boa noite!", "Good evening"]; return `<span lang="pt-PT">${pt}</span> <span class="praise-en">${en}</span>`; };
 function renderWotd() {
   const ov = $("#ov"); ov.hidden = false;
   const w = WOTD[W.i], done = S.wotdDone[today()], st = currentStreak(), xpToday = S.days[today()] || 0;
@@ -1039,7 +1155,7 @@ function renderWotd() {
   <div class="obody">
     ${W.welcome ? `<div><h1 style="font-size:1.9rem">${greeting()}</h1><div class="small muted">${syncText()} ${st ? `${st}-day streak, keep it going.` : "Start a streak today."}</div></div>` : ""}
     <section class="card stack wotd-hero">
-      <div class="kind">Palavra do dia · ${new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" })}</div>
+      <div class="kind">Word of the day · ${new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</div>
       <div class="row"><div class="big-word" lang="pt-PT" style="flex:1">${esc(w.pt)}</div>${speakBtn(w.pt)}${speakBtn(w.pt, true)}</div>
       <div style="font-size:1.1rem">${esc(w.en)}</div>
       ${w.alt ? `<div class="small muted">Also: <span lang="pt-PT">${w.alt.map(esc).join(", ")}</span></div>` : ""}
@@ -1050,10 +1166,10 @@ function renderWotd() {
       ${AI ? `<button class="btn ghost" data-a="wmore" ${W.moreBusy ? "disabled" : ""}>${W.moreBusy ? "Writing…" : "More examples"}</button>` : ""}</section>
     <button class="btn sun wide" data-a="wpractise">${done ? "Practise again" : "Practise this word · 7 exercises"}</button>
     ${AI ? `<section class="card stack"><h3>Use it yourself</h3><p class="small muted" style="margin:0">Write your own sentence with <b lang="pt-PT">${esc(w.pt)}</b>. The tutor checks it's natural Portugal Portuguese.</p>
-      <div class="composer" style="position:static"><textarea id="wmine" rows="2" lang="pt-PT" placeholder="Escreve uma frase…" aria-label="Your sentence"></textarea>${canMic() ? `<button class="icon-btn" data-a="mic" data-target="wmine" aria-label="Dictate">${ICON.mic}</button>` : ""}</div>
+      <div class="composer" style="position:static"><textarea id="wmine" rows="2" lang="pt-PT" placeholder="Write a sentence…" aria-label="Your sentence"></textarea>${canListen() ? `<button class="icon-btn ${W.listening ? "rec" : ""}" data-a="wmic" aria-label="${W.listening ? "Stop listening" : "Say your sentence"}">${ICON.mic}</button>` : ""}</div>
       <button class="btn" data-a="wcheck" ${W.busy ? "disabled" : ""}>${W.busy ? "Checking…" : "Check my sentence"}</button>
-      ${W.fb ? `<div class="banner" style="background:${W.fb.ok ? "var(--ok-soft)" : "var(--bad-soft)"};color:var(--ink)"><b>${W.fb.ok ? "Muito bem!" : "Almost."}</b> ${W.fb.ok ? "" : `Better: <b lang="pt-PT">${esc(W.fb.corrected)}</b>`}<div class="small">${esc(W.fb.explanation || "")}</div>${W.fb.translation ? `<div class="small muted">${esc(W.fb.translation)}</div>` : ""}
-        <div class="tools" style="display:flex;gap:8px;margin-top:6px"><button class="btn ghost" data-a="say" data-t="${esc(W.fb.ok ? W.fb.sentence : W.fb.corrected)}">Ouvir</button><button class="btn ghost" data-a="say" data-slow="1" data-t="${esc(W.fb.ok ? W.fb.sentence : W.fb.corrected)}">Devagar</button></div></div>` : ""}
+      ${W.fb ? `<div class="banner" style="background:${W.fb.ok ? "var(--ok-soft)" : "var(--bad-soft)"};color:var(--ink)"><b>${W.fb.ok ? "Well done!" : "Almost."}</b> ${W.fb.ok ? "" : `Better: <b lang="pt-PT">${esc(W.fb.corrected)}</b>`}<div class="small">${esc(W.fb.explanation || "")}</div>${W.fb.translation ? `<div class="small muted">${esc(W.fb.translation)}</div>` : ""}
+        <div class="tools" style="display:flex;gap:8px;margin-top:6px"><button class="btn ghost" data-a="say" data-t="${esc(W.fb.ok ? W.fb.sentence : W.fb.corrected)}">Listen</button><button class="btn ghost" data-a="say" data-slow="1" data-t="${esc(W.fb.ok ? W.fb.sentence : W.fb.corrected)}">Slow</button></div></div>` : ""}
     </section>` : ""}
     ${W.welcome && CLOUD_READY && !USER ? `<section class="card stack"><b>Keep your progress safe</b><div class="small muted">Sign in to save your streak and words to your Google account and use Pois on any device. It also unlocks the free AI tutor.</div>${googleBtn()}</section>` : ""}
     ${W.welcome ? `<button class="btn ghost wide" data-a="close">Go to my lessons</button>` : ""}
@@ -1081,7 +1197,7 @@ function startStudy(uid) { ST = { u: unitById(uid), i: 0 }; renderStudy(); }
 function renderStudy() {
   const u = ST.u, keys = unitKeys(u.id), total = keys.length + 1, ov = $("#ov"); ov.hidden = false;
   let body;
-  if (ST.i === 0) body = `<div class="kind">Unit notes</div><h1 lang="pt-PT">${esc(u.pt)}</h1><div class="muted">${esc(u.en)}</div><div class="card note">${u.note}</div>`;
+  if (ST.i === 0) body = `<div class="kind">Unit notes</div><h1>${esc(u.en)}</h1><div class="muted" lang="pt-PT">${esc(u.pt)}</div><div class="card note">${u.note}</div>`;
   else { const it = ITEMS[keys[ST.i - 1]]; body = `<div class="kind">${it.kind === "w" ? "Word" : "Phrase"} ${ST.i} of ${keys.length}</div>
     <div class="card flash"><div class="big" lang="pt-PT">${esc(it.pt)}</div><div class="row">${speakBtn(it.pt)}${speakBtn(it.pt, true)}</div><div style="font-size:1.1rem">${esc(it.en)}</div>${it.alt ? `<div class="small muted">Also: <span lang="pt-PT">${it.alt.map(esc).join(", ")}</span></div>` : ""}${it.tip ? `<div class="tip" style="text-align:left">${esc(it.tip)}</div>` : ""}</div>`;
     if (S.settings.autoplay) speak(it.pt); }
@@ -1099,7 +1215,7 @@ function startFlash(keys) {
 function renderFlash() {
   const ov = $("#ov"); ov.hidden = false;
   if (FL.i >= FL.keys.length) {
-    ov.innerHTML = `<div class="obody" style="justify-content:center;align-items:center;text-align:center"><h1>Revisão feita!</h1><p class="muted">${FL.n} cards reviewed. +${FL.n} XP</p></div><div class="ofoot"><button class="btn sun wide" data-a="close">Continuar</button></div>`; return;
+    ov.innerHTML = `<div class="obody" style="justify-content:center;align-items:center;text-align:center"><h1>Review done!</h1><p class="muted">${FL.n} cards reviewed. +${FL.n} XP</p></div><div class="ofoot"><button class="btn sun wide" data-a="close">Continue</button></div>`; return;
   }
   const k = FL.keys[FL.i], it = getItem(k), c = S.cards[k] || newCard();
   if (FL.front == null) FL.front = S.settings.dir === "mix" ? (Math.random() < 0.5 ? "pt" : "en") : S.settings.dir;
@@ -1155,6 +1271,32 @@ const ACT = {
   check: () => doCheck(),
   next: () => lessonNext(),
   explain: () => explainAnswer(),
+  spk: () => {
+    const e = L && L.ex[L.i]; if (!e || e.type !== "speak") return;
+    const sp = L.sp || (L.sp = { phase: "idle", interim: "", tries: 0 });
+    if (sp.phase === "listening") { stopListening(); return; }
+    if (HAS_TTS) speechSynthesis.cancel();
+    sp.phase = "listening"; sp.interim = ""; L.state = "ask"; const prevFb = L.fb; L.fb = null; renderLesson();
+    listenOnce({
+      onInterim: t => { sp.interim = t; const el = $("#interim"); if (el) el.textContent = t; },
+      onError: c => { sp.phase = "idle"; L.fb = prevFb; if (prevFb) L.state = "fb"; renderLesson(); const m = micErr(c); if (m) toast(m); },
+      onDone: alts => {
+        if (!L || L.ex[L.i] !== e) return;
+        const a = analyseSpeech([e.item.pt, ...(e.item.alt || [])], [alts[0]]); /* score the recogniser's main guess only: no benefit of the doubt */
+        sp.tries++; sp.phase = "done"; sp.interim = a.heard;
+        if (sp.tries === 1) {
+          if (!e.retry) { L.first++; if (a.ok) L.firstOk++; }
+          recordAnswer(e.item.key, a.ok); sp.firstOk = a.ok; save();
+        }
+        L.fb = { ok: a.ok, speech: a, firstTryMissed: !sp.firstOk };
+        L.state = "fb"; renderLesson();
+        if (!a.perfect && AI) {
+          const fb = L.fb; fb.tipBusy = true; renderLesson();
+          pronunciationTip(e.item.pt, a).then(t => { fb.tip = t; }).catch(() => {}).finally(() => { fb.tipBusy = false; if (L && L.fb === fb) renderLesson(); });
+        }
+      }
+    });
+  },
   skipspeak: () => { L.fb = { ok: false, skip: true }; L.state = "fb"; renderLesson(); },
   match: b => {
     const m = L.m, side = b.dataset.side, k = b.dataset.k;
@@ -1180,6 +1322,17 @@ const ACT = {
   level: b => { S.settings.level = b.dataset.l; save(); render(); },
   chstart: b => { CH.scenario = b.dataset.s || null; CH.msgs = []; CH.started = true; chatTurn(); },
   chreset: () => { CH.started = false; CH.msgs = []; CH.scenario = null; render(); },
+  chmic: () => {
+    if (CH.listening) { stopListening(); return; }
+    if (CH.busy) return;
+    if (HAS_TTS) speechSynthesis.cancel();
+    CH.listening = true; CH.interim = ""; render();
+    listenOnce({
+      onInterim: t => { CH.interim = t; const el = $("#chinterim"); if (el) el.textContent = t; },
+      onError: c => { CH.listening = false; render(); const m = micErr(c); if (m) toast(m); },
+      onDone: alts => { CH.listening = false; CH.interim = ""; CH.msgs.push({ role: "me", text: alts[0], spoken: true }); chatTurn(); }
+    });
+  },
   chsend: () => { const t = $("#chin"); const v = t && t.value.trim(); if (!v || CH.busy) return; CH.msgs.push({ role: "me", text: v }); t.value = ""; chatTurn(); },
   chsugg: b => { const t = $("#chin"); if (t) { t.value = b.dataset.t; t.focus(); } },
   chhelp: () => { CH.showSugg = true; render(); },
@@ -1256,10 +1409,21 @@ const ACT = {
     catch (e) { toast(aiErr(e)); }
     if (W) { W.moreBusy = false; renderWotd(); }
   },
+  wmic: () => {
+    if (W.listening) { stopListening(); return; }
+    if (HAS_TTS) speechSynthesis.cancel();
+    W.listening = true; renderWotd();
+    listenOnce({
+      onInterim: t => { const el = $("#wmine"); if (el) el.value = t; },
+      onError: c => { W.listening = false; renderWotd(); const m = micErr(c); if (m) toast(m); },
+      onDone: alts => { W.listening = false; W.mine = alts[0]; W.spoken = true; ACT.wcheck(); }
+    });
+  },
   wcheck: async () => {
+    const spoken = !!W.spoken; W.spoken = false;
     const w = WOTD[W.i], t = (W.mine || "").trim(); if (!t) { toast("Write a sentence first."); return; }
     W.busy = true; renderWotd();
-    const prompt = `${PT_RULES}\nA learner (${S.settings.level}) wrote a sentence to practise the word "${w.pt}" (${w.en}). Check it. Return ONLY JSON: {"ok": true if it is correct, natural European Portuguese and uses the word (any form), else false, "corrected": "the sentence rewritten as natural European Portuguese using the word", "explanation": "one or two short, encouraging English sentences; if they used a word or form not used in Portugal, give the Portugal one without mentioning other countries", "translation": "English translation of the corrected sentence"}\nSentence: """${t}"""`;
+    const prompt = `${PT_RULES}\nA learner (${S.settings.level}) wrote a sentence to practise the word "${w.pt}" (${w.en}). ${spoken ? "The sentence was spoken and transcribed by speech recognition, so if a word looks like a mis-recognition of a Portuguese word, assume they meant that word and mention in explanation which word didn't come through clearly, with a short pronunciation tip. " : ""}Check it. Return ONLY JSON: {"ok": true if it is correct, natural European Portuguese and uses the word (any form), else false, "corrected": "the sentence rewritten as natural European Portuguese using the word", "explanation": "one or two short, encouraging English sentences; if they used a word or form not used in Portugal, give the Portugal one without mentioning other countries", "translation": "English translation of the corrected sentence"}\nSentence: """${t}"""`;
     try { const r = await askJSON(prompt, { modelTier: "default" }); if (W) { W.fb = { ok: !!r.ok, corrected: String(r.corrected || t), explanation: String(r.explanation || ""), translation: String(r.translation || ""), sentence: t }; if (r.ok) { S.mine[today()] = t; addXP(3); } S.stats.chats++; save(); } }
     catch (e) { toast(aiErr(e)); }
     if (W) { W.busy = false; renderWotd(); const say = W.fb && (W.fb.ok ? W.fb.sentence : W.fb.corrected); if (say && S.settings.autoplay) speak(say); }
