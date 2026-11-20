@@ -5,13 +5,17 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut as fbSignOut, browserLocalPersistence, setPersistence } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 let app = null, auth = null, db = null, ai = null, user = null, resolved = false;
 const listeners = [];
 
-function init(config) {
+let appCheckOn = false;
+function init(config, opts = {}) {
   if (app || !config || !config.apiKey) return !!app;
   app = initializeApp(config);
+  /* App Check proves requests come from this site, so the free tutor can't be used by others. */
+  if (opts.appCheckSiteKey) { try { initializeAppCheck(app, { provider: new ReCaptchaV3Provider(opts.appCheckSiteKey), isTokenAutoRefreshEnabled: true }); appCheckOn = true; } catch (e) {} }
   auth = getAuth(app);
   setPersistence(auth, browserLocalPersistence).catch(() => {});
   db = getFirestore(app);
@@ -65,6 +69,7 @@ async function generate({ system, messages, json, models }) {
       lastErr = e;
       const msg = String(e && (e.message || e.code) || "");
       if (/429|quota|RESOURCE_EXHAUSTED/i.test(msg)) throw { code: "rate_limited", message: msg };
+      if (/app ?check/i.test(msg)) throw { code: "app_check", message: msg };
       /* model not found / not allowed on this tier: try the next one */
       if (/404|not found|not supported|permission|403|400/i.test(msg)) continue;
       throw { code: "error", message: msg };
@@ -73,5 +78,5 @@ async function generate({ system, messages, json, models }) {
   throw { code: "error", message: String(lastErr && lastErr.message || lastErr) };
 }
 
-window.PoisCloud = { init, signIn, signOut, onUser, load, save, generate, get ready() { return !!app; }, get aiReady() { return !!ai; } };
+window.PoisCloud = { init, signIn, signOut, onUser, load, save, generate, get ready() { return !!app; }, get aiReady() { return !!ai; }, get appCheck() { return appCheckOn; } };
 window.dispatchEvent(new Event("poiscloud"));

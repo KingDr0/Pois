@@ -252,3 +252,6 @@ body.gated #app, body.gated #ov { visibility: hidden; }
 .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .top { z-index: 5; }
 @media (max-width: 380px) { .brand small { display: none; } }
+
+/* reCAPTCHA v3 badge hidden; attribution shown on the sign-in page instead (allowed by Google's terms) */
+.grecaptcha-badge { visibility: hidden; }

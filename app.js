@@ -125,13 +125,14 @@ function renderGate() {
     </ul>
     ${GATE_PHASE === "signing" ? `<button class="btn google wide" disabled>Signing in…</button>` : googleBtn("Continue with Google").replace('class="btn google"', 'class="btn google wide"')}
     <p class="small muted fine">We only store your learning progress. Nothing is shared or sold.</p>
+    <p class="small muted fine">This site is protected by reCAPTCHA. The Google <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy</a> and <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Terms of Service</a> apply.</p>
   </div>`;
 }
 
 function initCloud() {
   const cfg = window.POIS_CONFIG && POIS_CONFIG.firebase;
   if (!window.PoisCloud || !cfg || !cfg.apiKey) return;
-  try { if (!PoisCloud.init(cfg)) return; } catch (e) { return; }
+  try { if (!PoisCloud.init(cfg, { appCheckSiteKey: POIS_CONFIG.appCheckSiteKey })) return; } catch (e) { return; }
   CLOUD_READY = true;
   showGate("splash");
   const slow = setTimeout(() => { if (GATE_PHASE === "loading") { GATE_PHASE = "ready"; renderGate(); } }, 8000);
@@ -419,6 +420,7 @@ const aiErr = e => {
   if (c === "bad_model") return "That model name wasn't found. Check it in Mais › Settings › AI tutor.";
   if (c === "signin") return "Sign in with Google to use the free tutor.";
   if (c === "network") return "No connection. The AI tutor needs the internet.";
+  if (c === "app_check") return "The free tutor is blocked by Firebase App Check. It needs the reCAPTCHA site key set up (see README).";
   if (c === "bad_output") return "The tutor's reply came back garbled. Try again.";
   return "Couldn't reach the AI tutor. Try again.";
 };

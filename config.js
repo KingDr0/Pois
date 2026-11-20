@@ -12,6 +12,10 @@ window.POIS_CONFIG = {
     appId: "1:625804227389:web:3a61d48297669658a10b54"
   },
 
+  /* App Check (reCAPTCHA v3) site key. Required when App Check is enforced for Firebase AI Logic,
+     so only this site can use the free tutor. It's public by design; the secret key goes in the Firebase console. */
+  appCheckSiteKey: "",
+
   /* Gemini models the built-in tutor tries, in order, until one is available on the free tier. */
   geminiModels: ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash"],
 
