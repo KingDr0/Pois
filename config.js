@@ -14,7 +14,7 @@ window.POIS_CONFIG = {
 
   /* App Check key (reCAPTCHA Enterprise, created on the Fraud Defense page in Google Cloud console). Required when App Check is enforced for Firebase AI Logic,
      so only this site can use the free tutor. The key is public by design; register the same key in Firebase › App Check. */
-  appCheckSiteKey: "",          /* reCAPTCHA Enterprise key from Google Cloud › Fraud Defense */
+  appCheckSiteKey: "6LdFxikuAAAAAHYDZuB093sUqDy1s-hmyOl9xZtm",          /* reCAPTCHA Enterprise key from Google Cloud › Fraud Defense */
   appCheckProvider: "enterprise",
 
   /* Gemini models the built-in tutor tries, in order, until one is available on the free tier. */
