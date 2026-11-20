@@ -347,7 +347,7 @@ let AIC = { provider: "builtin", keys: {}, models: {} };
 try { AIC = { ...AIC, ...JSON.parse(localStorage.getItem(AI_LS) || "{}") }; } catch (e) {}
 const saveAIC = () => { try { localStorage.setItem(AI_LS, JSON.stringify(AIC)); } catch (e) {} };
 const CFG = window.POIS_CONFIG || {};
-const GEMINI_MODELS = CFG.geminiModels || ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3.5-flash"];
+const GEMINI_MODELS = CFG.geminiModels || ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash"];
 const DAILY_LIMIT = CFG.builtinDailyLimit || 80;
 function aiState() {
   if (AIC.provider === "builtin") {

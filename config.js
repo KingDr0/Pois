@@ -18,7 +18,7 @@ window.POIS_CONFIG = {
   appCheckProvider: "enterprise",
 
   /* Gemini models the built-in tutor tries, in order, until one is available on the free tier. */
-  geminiModels: ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3.5-flash"],
+  geminiModels: ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash"],
 
   /* Free tutor messages per person per day. */
   builtinDailyLimit: 80
