@@ -132,7 +132,7 @@ function renderGate() {
 function initCloud() {
   const cfg = window.POIS_CONFIG && POIS_CONFIG.firebase;
   if (!window.PoisCloud || !cfg || !cfg.apiKey) return;
-  try { if (!PoisCloud.init(cfg, { appCheckSiteKey: POIS_CONFIG.appCheckSiteKey })) return; } catch (e) { return; }
+  try { if (!PoisCloud.init(cfg, { appCheckSiteKey: POIS_CONFIG.appCheckSiteKey, appCheckProvider: POIS_CONFIG.appCheckProvider })) return; } catch (e) { return; }
   CLOUD_READY = true;
   showGate("splash");
   const slow = setTimeout(() => { if (GATE_PHASE === "loading") { GATE_PHASE = "ready"; renderGate(); } }, 8000);

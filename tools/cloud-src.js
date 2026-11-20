@@ -5,7 +5,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut as fbSignOut, browserLocalPersistence, setPersistence } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaV3Provider, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 let app = null, auth = null, db = null, ai = null, user = null, resolved = false;
 const listeners = [];
@@ -15,7 +15,12 @@ function init(config, opts = {}) {
   if (app || !config || !config.apiKey) return !!app;
   app = initializeApp(config);
   /* App Check proves requests come from this site, so the free tutor can't be used by others. */
-  if (opts.appCheckSiteKey) { try { initializeAppCheck(app, { provider: new ReCaptchaV3Provider(opts.appCheckSiteKey), isTokenAutoRefreshEnabled: true }); appCheckOn = true; } catch (e) {} }
+  if (opts.appCheckSiteKey) {
+    try {
+      const provider = opts.appCheckProvider === "v3" ? new ReCaptchaV3Provider(opts.appCheckSiteKey) : new ReCaptchaEnterpriseProvider(opts.appCheckSiteKey);
+      initializeAppCheck(app, { provider, isTokenAutoRefreshEnabled: true }); appCheckOn = true;
+    } catch (e) {}
+  }
   auth = getAuth(app);
   setPersistence(auth, browserLocalPersistence).catch(() => {});
   db = getFirestore(app);

@@ -34,11 +34,13 @@ No secrets live in this repo. `config.js` holds the Firebase web config, which i
    Don't link a billing account: staying on the free Spark plan keeps the tutor free.
 
 ### 1b. App Check (protects the free tutor)
-App Check lets only your site use the built-in tutor.
-1. Create a reCAPTCHA v3 key at [google.com/recaptcha/admin/create](https://www.google.com/recaptcha/admin/create): type **Score based (v3)**, domain `YOUR-USERNAME.github.io`. Copy the **site key** and the **secret key**.
-2. Firebase console › **Security › App Check › Apps** › your web app › **reCAPTCHA** › paste the **secret key** › Save.
-3. Put the **site key** in `config.js` as `appCheckSiteKey`.
-4. In **App Check › APIs**, make sure **Firebase AI Logic** is enforced. You can also enforce Cloud Firestore once sign-in and sync work.
+App Check lets only your site use the built-in tutor. It uses reCAPTCHA Enterprise; the older reCAPTCHA v3 option is deprecated.
+1. Google Cloud console › search **Fraud Defense** › make sure project **pois** is selected › **Create key**: type **Website**, domain `YOUR-USERNAME.github.io`, leave "Use checkbox challenge" off. Copy the key ID.
+2. Firebase console › **Security › App Check › Apps** › your web app › **reCAPTCHA Enterprise** › paste the key › Save.
+3. Put the key in `config.js` as `appCheckSiteKey` (with `appCheckProvider: "enterprise"`).
+4. In **App Check › APIs**, make sure **Firebase AI Logic** is enforced.
+
+Don't add a billing account: the Gemini free tier applies only to projects without billing.
 
 ### 2. GitHub Pages
 **Repo › Settings › Pages › Build and deployment** › Source: *Deploy from a branch* › Branch: `main`, folder `/ (root)` › Save.
