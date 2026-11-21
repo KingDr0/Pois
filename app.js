@@ -361,11 +361,14 @@ function speak(text, o = {}) {
   if (!hasVoice()) { if (!warnedVoice && VOICES_CHECKED) { warnedVoice = true; toast("Audio is off until a Portugal voice is set up. See the yellow box on the Learn tab."); } return Promise.resolve(); }
   return rawSpeak(text, o);
 }
+/* Speech engines read a lone "e" or "o" as the letter name ("é", "ó"). In Portugal the word "e" (and) sounds like "ee" and "o" (the) like "oo". */
+const SAY_FIX = { e: "i", o: "u", os: "us" };
+const sayFix = text => { const k = String(text).trim().toLowerCase().replace(/[.!?,;:]/g, ""); return SAY_FIX[k] || text; };
 function rawSpeak(text, o = {}) {
   return new Promise(res => {
     try {
       if (!o.queue) speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
+      const u = new SpeechSynthesisUtterance(sayFix(text));
       const v = o.voice || VOICE;
       if (v) u.voice = v;
       u.lang = v && v.lang ? v.lang : "pt-PT";
@@ -694,7 +697,9 @@ function screenLearn() {
     <div class="stack" style="flex:1;gap:6px">
       <h2>${pct >= 1 ? "Daily goal reached!" : xpToday ? "Keep going!" : "Welcome back!"}</h2>
       <div class="muted small">${xpToday} / ${goal} XP today · ${st} day streak</div>
-      <button class="btn sun" data-a="practice" data-u="${next.id}">Continue: ${esc(next.en)}</button>
+      ${(() => { const sv = savedLesson(); return sv
+        ? `<button class="btn sun" data-a="resume">Continue: ${esc(savedLessonLabel(sv))} · ${sv.i + 1} of ${sv.ex.length}</button>`
+        : `<button class="btn sun" data-a="practice" data-u="${next.id}">Continue: ${esc(next.en)}</button>`; })()}
     </div>
   </section>
   ${voiceBanner()}
@@ -1104,12 +1109,43 @@ function makeLesson(keys, level, n = 12) {
   if (forMatch.length >= 5) ex.splice(Math.min(3, ex.length), 0, { type: "match", items: shuffle(forMatch).slice(0, 5) });
   return ex;
 }
+
+/* ---------- In-progress lesson: saved on this device so closing or refreshing doesn't lose it ---------- */
+const LKEY = "pois.lesson.v1";
+function saveLessonProgress() {
+  if (!L || L.state === "end") return;
+  const i = L.state === "fb" ? L.i + 1 : L.i;
+  if (i >= L.ex.length) return;
+  try {
+    localStorage.setItem(LKEY, JSON.stringify({ t: Date.now(), uid: S.uid || "", i, opts: L.opts, first: L.first, firstOk: L.firstOk, lc0: L.lc0,
+      ex: L.ex.map(e => ({ type: e.type, key: e.item ? e.item.key : null, keys: e.items ? e.items.map(x => x.key) : null, retry: !!e.retry, opts: e.opts || null })) }));
+  } catch (e) {}
+}
+function clearLessonProgress() { try { localStorage.removeItem(LKEY); } catch (e) {} }
+function savedLesson() {
+  try {
+    const d = JSON.parse(localStorage.getItem(LKEY) || "null");
+    if (!d || Date.now() - d.t > 7 * DAY || (d.uid && S.uid && d.uid !== S.uid)) return null;
+    const ex = d.ex.map(e => e.type === "match" ? (e.keys && e.keys.every(getItem) ? { type: "match", items: e.keys.map(getItem) } : null)
+      : getItem(e.key) ? { type: e.type, item: getItem(e.key), retry: e.retry || undefined, opts: e.opts || undefined } : null);
+    if (ex.some(x => !x) || d.i >= ex.length) return null;
+    return { ...d, ex };
+  } catch (e) { return null; }
+}
+function resumeLesson() {
+  const d = savedLesson(); if (!d) { clearLessonProgress(); return false; }
+  ST = null;
+  L = { ex: d.ex, i: d.i, opts: d.opts, first: d.first, firstOk: d.firstOk, state: "ask", lc0: d.lc0 ?? learnedCount() };
+  prepEx(); renderLesson(true); return true;
+}
+const savedLessonLabel = d => { const u = d.opts.unit && unitById(d.opts.unit); return d.opts.wotd ? "Word of the Day" : d.opts.kind ? d.opts.kind : u ? (u.ladder != null ? u.en : u.pt) : "Lesson"; };
+
 function startLesson(keys, opts = {}) {
   const level = opts.level ?? 0;
   const ex = makeLesson(keys, level, opts.n || 12);
   if (!ex.length) { toast("Nothing to practise yet. Start a unit first."); return; }
   L = { ex, i: 0, opts: { ...opts, level }, first: 0, firstOk: 0, state: "ask", lc0: learnedCount() };
-  prepEx(); renderLesson(true);
+  prepEx(); renderLesson(true); saveLessonProgress();
 }
 function distractors(it, field, n = 3) {
   const all = Object.values(ITEMS);
@@ -1229,14 +1265,14 @@ function doCheck() {
   if (!e.retry) { L.first++; if (r.ok) L.firstOk++; }
   recordAnswer(e.item.key, r.ok);
   if (!r.ok && !e.retry) L.ex.push({ ...e, retry: true, opts: e.opts ? shuffle(e.opts) : undefined });
-  save(); renderLesson();
+  save(); saveLessonProgress(); renderLesson();
   const d = sfx(r.ok ? "right" : "wrong");
   if (S.settings.autoplay) setTimeout(() => { if (L && L.ex[L.i] === e) speak(e.item.pt); }, d);
 }
 function lessonNext() {
   L.i++;
   if (L.i >= L.ex.length) return finishLesson();
-  prepEx(); renderLesson(true);
+  prepEx(); renderLesson(true); saveLessonProgress();
 }
 function finishLesson() {
   const acc = L.first ? L.firstOk / L.first : 1;
@@ -1251,6 +1287,7 @@ function finishLesson() {
   if (L.opts.wotd) { S.wotdDone[today()] = true; const ks = Object.keys(S.wotdDone).sort().slice(-60); const d = {}; ks.forEach(k => d[k] = true); S.wotdDone = d; note = "Today's word is in your review deck. Get it right again on another day and its book joins your library."; }
   S.stats.lessons++; addXP(xp);
   const books = learnedCount() - (L.lc0 ?? learnedCount());
+  clearLessonProgress();
   L.state = "end"; L.result = { xp, acc, up, note, books }; renderLesson(); sfx("done");
 }
 async function explainAnswer() {
@@ -1287,9 +1324,11 @@ function wotdCard() {
     <div class="row" style="justify-content:space-between"><span class="kind">Word of the day</span>${done ? `<span class="flag">PRACTISED</span>` : `<span class="chip sun small">+XP</span>`}</div>
     <div class="row" style="gap:8px;margin-top:4px"><h2 lang="pt-PT">${esc(w.pt)}</h2></div><div class="muted">${esc(w.en)}</div></button>`;
 }
+let RESUMED = false; /* after a refresh, reopen a lesson you were in the middle of (once) */
 function maybeWelcome() {
   if (GATE || (CLOUD_READY && !USER)) return;
-  if (S.wotdSeen === today() || L || ST || FL || W) return;
+  if (L || ST || FL || W) return;
+  if (S.wotdSeen === today()) { const sv = savedLesson(); if (sv && Date.now() - sv.t < 30 * 60 * 1000 && !RESUMED) { RESUMED = true; resumeLesson(); } return; }
   S.wotdSeen = today(); save();
   openWotd(true);
 }
@@ -1498,15 +1537,16 @@ const ACT = {
   book: b => { LIB.sel = +b.dataset.b; render(); const d = $("#bookinfo"); if (d) d.scrollIntoView({ block: "nearest", behavior: "smooth" }); },
   say: b => speak(b.dataset.t, { slow: !!b.dataset.slow }),
   acc: b => { const t = $("#" + b.dataset.target); if (t) insertAtCursor(t, b.dataset.c); },
-  close: () => closeOverlay(),
+  close: () => { const mid = L && L.state !== "end" && savedLesson(); closeOverlay(); if (mid) toast("Lesson saved. Tap Continue to pick up where you left off."); },
+  resume: () => { if (!resumeLesson()) { toast("That lesson has expired. Starting fresh."); render(); } },
   study: b => startStudy(b.dataset.u),
   stnext: () => { ST.i++; renderStudy(); },
   stprev: () => { ST.i = Math.max(0, ST.i - 1); renderStudy(); },
-  practice: b => { const id = b.dataset.u; ST = null; const lad = /^lad\d+$/.test(id); startLesson(lad ? ladderKeys(+id.slice(3)) : unitKeys(id), { unit: id, level: Math.min(unitLevel(id), 2) }); },
+  practice: b => { const id = b.dataset.u; ST = null; const sv = savedLesson(); if (sv && sv.opts.unit === id && resumeLesson()) return; const lad = /^lad\d+$/.test(id); startLesson(lad ? ladderKeys(+id.slice(3)) : unitKeys(id), { unit: id, level: Math.min(unitLevel(id), 2) }); },
   flash: () => startFlash(dueKeys()),
-  quizdue: () => startLesson(dueKeys(), { level: 1 }),
-  mistakes: () => startLesson(Object.keys(S.mistakes).filter(getItem), { level: 1 }),
-  personal: () => { const k = personalKeys(); if (k.length < 4) { toast("Finish a lesson or two first, then this targets your weak spots."); return; } startLesson(k, { level: 2 }); },
+  quizdue: () => startLesson(dueKeys(), { level: 1, kind: "Due review" }),
+  mistakes: () => startLesson(Object.keys(S.mistakes).filter(getItem), { level: 1, kind: "Mistakes review" }),
+  personal: () => { const k = personalKeys(); if (k.length < 4) { toast("Finish a lesson or two first, then this targets your weak spots."); return; } startLesson(k, { level: 2, kind: "Personal practice" }); },
   opt: b => { L.sel = +b.dataset.i; const e = L.ex[L.i]; if (e.type === "en2pt") speak(e.opts[L.sel]); renderLesson(); },
   build: b => { const e = L.ex[L.i], i = +b.dataset.i; if (!L.built.includes(i)) { L.built.push(i); speak(e.bank[i].t); } renderLesson(); },
   unbuild: b => { const i = +b.dataset.i; L.built = L.built.filter(x => x !== i); renderLesson(); },
@@ -1531,7 +1571,7 @@ const ACT = {
           recordAnswer(e.item.key, a.ok); sp.firstOk = a.ok; save();
         }
         L.fb = { ok: a.ok, speech: a, firstTryMissed: !sp.firstOk };
-        L.state = "fb"; renderLesson(); sfx(a.ok ? "right" : "wrong");
+        L.state = "fb"; saveLessonProgress(); renderLesson(); sfx(a.ok ? "right" : "wrong");
         if (!a.perfect && AI) {
           const fb = L.fb; fb.tipBusy = true; renderLesson();
           pronunciationTip(e.item.pt, a).then(t => { fb.tip = t; }).catch(() => {}).finally(() => { fb.tipBusy = false; if (L && L.fb === fb) renderLesson(); });
