@@ -424,10 +424,11 @@ function toggleMic(cb) {
    Nothing goes into an editable box, so the result is what you actually said. */
 let LISTEN = null;
 const canListen = () => !!SRClass;
-function listenOnce({ onInterim, onDone, onError }) {
+const EN_LANG = /^en\b/i.test(navigator.language || "") ? navigator.language : "en-GB";
+function listenOnce({ onInterim, onDone, onError, lang = "pt-PT" }) {
   if (LISTEN) { try { LISTEN.abort(); } catch (e) {} LISTEN = null; }
   let r; try { r = new SRClass(); } catch (e) { onError("unsupported"); return; }
-  r.lang = "pt-PT"; r.interimResults = true; r.continuous = false; r.maxAlternatives = 5;
+  r.lang = lang; r.interimResults = true; r.continuous = false; r.maxAlternatives = 5;
   let finalPrefix = "", lastAlts = null, interim = "", err = null, ended = false;
   r.onresult = e => {
     let prefix = "", inter = ""; lastAlts = null;
@@ -783,7 +784,7 @@ function screenReview() {
 function fmtWhen(t) { const m = Math.round((t - Date.now()) / 60e3); if (m < 60) return `in ${m} min`; const h = Math.round(m / 60); if (h < 24) return `in ${h} h`; return `in ${Math.round(h / 24)} days`; }
 
 /* ---------- Chat (AI) ---------- */
-const CH = { mode: "free", scenario: null, msgs: [], busy: false, started: false, showSugg: false, trans: { dir: "en", out: null, busy: false }, asks: [], askBusy: false };
+const CH = { mode: "free", scenario: null, msgs: [], busy: false, started: false, showSugg: false, trans: { dir: "en", out: null, busy: false, listening: false, interim: "", spoken: false, speech: null, tip: "" }, asks: [], askBusy: false };
 function screenChat() {
   if (!AI) return `<section class="card stack"><h2>Chat</h2><p class="muted" style="margin:0">Chat with Rita, roleplays, the translator and grammar help use an AI tutor.</p>${aiOffMessage()}</section>`;
   const modes = [["free", "Free chat"], ["role", "Roleplay"], ["trans", "Translator"], ["ask", "Grammar"]];
@@ -854,20 +855,58 @@ async function chatTurn() {
   } catch (e) { CH.busy = false; render(); toast(aiErr(e)); }
 }
 function chatTranslator() {
-  const T = CH.trans, o = T.out;
-  return `<section class="card stack"><h2>Translator</h2>
-    <div class="seg" role="group"><button data-a="trdir" data-d="en" aria-pressed="${T.dir === "en"}">English › Portugal PT</button><button data-a="trdir" data-d="pt" aria-pressed="${T.dir === "pt"}">Check my Portuguese</button></div>
-    <textarea id="trin" rows="3" ${T.dir === "pt" ? 'lang="pt-PT"' : ""} placeholder="${T.dir === "en" ? "Type English, e.g. Where can I catch the bus to Belém?" : "Paste or write Portuguese to translate it and see how a Portuguese person would say it"}"></textarea>
-    <button class="btn" data-a="trgo" ${T.busy ? "disabled" : ""}>${T.busy ? "Translating…" : "Translate"}</button>
-    ${o ? (o.pt ? `<div class="stack"><div class="row"><div class="prompt" lang="pt-PT" style="flex:1">${esc(o.pt)}</div>${speakBtn(o.pt)}</div>
-      ${o.informal ? `<div class="small"><span class="flag">TU</span> <span lang="pt-PT">${esc(o.informal)}</span></div>` : ""}
-      ${o.literal ? `<div class="small muted">Word by word: ${esc(o.literal)}</div>` : ""}
+  const T = CH.trans, o = T.out, en = T.dir === "en";
+  const mic = canListen() ? `<button class="btn ghost mic-inline ${T.listening ? "rec" : ""}" data-a="trmic" ${T.busy ? "disabled" : ""}>${ICON.mic}<span>${T.listening ? "Listening… tap to stop" : en ? "Speak English" : "Say it in Portuguese"}</span></button>` : "";
+  const words = list => Array.isArray(list) && list.length ? `<div class="stack" style="gap:4px"><div class="kind">Word by word</div><div class="wordlist">${list.map(w => `<div class="wl"><span class="row" style="gap:4px">${speakBtn(String(w.pt || ""))}<b lang="pt-PT">${esc(String(w.pt || ""))}</b></span><span class="muted">${esc(String(w.en || ""))}</span></div>`).join("")}</div></div>` : "";
+  let out = "";
+  if (o && en && o.pt) out = `<div class="stack">
+      <div class="row"><div class="prompt" lang="pt-PT" style="flex:1">${esc(o.pt)}</div>${speakBtn(o.pt)}${speakBtn(o.pt, true)}</div>
+      ${o.informal ? `<div class="small"><span class="flag">TU</span> <span lang="pt-PT">${esc(o.informal)}</span> ${speakBtn(o.informal)}</div>` : ""}
+      ${words(o.words)}
+      ${!Array.isArray(o.words) && o.literal ? `<div class="small muted">Word by word: ${esc(o.literal)}</div>` : ""}
       ${o.notes ? `<div class="tip">${esc(o.notes)}</div>` : ""}
-      <button class="btn ghost" data-a="trsave">Save to review</button></div>`
-      : `<div class="stack"><div class="prompt">${esc(o.en || "")}</div>
-      ${o.natural && norm(o.natural) !== norm(CH.trans.src || "") ? `<div class="banner info"><b>More natural:</b> <span lang="pt-PT">${esc(o.natural)}</span> ${speakBtn(o.natural)}</div>` : `<div class="small"><span class="flag">NATURAL</span> That sounds natural.</div>`}
-      ${o.notes ? `<div class="tip">${esc(o.notes)}</div>` : ""}</div>`) : ""}
+      <button class="btn ghost" data-a="trsave">Save to review</button></div>`;
+  else if (o && !en) {
+    const said = String(o.intended || T.src || "");
+    out = `<div class="stack">
+      ${T.spoken ? `<div class="stack" style="gap:6px"><div class="kind">Your pronunciation</div>${T.speech ? speechResultHTML(T.speech) : `<div class="small muted">I heard: <i lang="pt-PT">“${esc(T.src)}”</i></div>`}
+        ${T.speech && T.speech.perfect ? `<div class="small"><span class="flag">CLEAR</span> Every word came through clearly.</div>` : ""}
+        ${T.tip ? `<div class="tip">${esc(T.tip)}</div>` : T.speech && !T.speech.perfect ? `<div class="small typing">Getting a pronunciation tip…</div>` : ""}</div>` : ""}
+      <div class="stack" style="gap:4px"><div class="kind">It means</div><div class="row"><div class="prompt" style="flex:1">${esc(o.en || "")}</div></div>
+        <div class="row small" style="gap:6px">${speakBtn(said)}${speakBtn(said, true)}<span class="muted">Hear it: <span lang="pt-PT">${esc(said)}</span></span></div></div>
+      ${words(o.words)}
+      ${o.natural && norm(o.natural) !== norm(said) ? `<div class="banner info"><b>More natural:</b> <span lang="pt-PT">${esc(o.natural)}</span> ${speakBtn(o.natural)}</div>` : `<div class="small"><span class="flag">NATURAL</span> That sounds natural.</div>`}
+      ${o.notes ? `<div class="tip">${esc(o.notes)}</div>` : ""}
+      <button class="btn ghost" data-a="trsave">Save to review</button></div>`;
+  }
+  return `<section class="card stack"><h2>Translator</h2>
+    <div class="seg" role="group"><button data-a="trdir" data-d="en" aria-pressed="${en}">English › Portugal PT</button><button data-a="trdir" data-d="pt" aria-pressed="${!en}">Check my Portuguese</button></div>
+    <p class="small muted" style="margin:0">${en ? "Type or say something in English and hear how to say it in Portugal." : "Type or say something in Portuguese, for example a phrase you just heard. You'll get what it means, word by word, and feedback on your pronunciation when you speak it."}</p>
+    <textarea id="trin" rows="3" ${en ? "" : 'lang="pt-PT"'} placeholder="${en ? "e.g. Where can I catch the bus to Belém?" : "e.g. Podes falar mais devagar?"}"></textarea>
+    ${T.listening ? `<div class="interim" id="trinterim" ${en ? "" : 'lang="pt-PT"'}>${esc(T.interim || "Listening…")}</div>` : ""}
+    <div class="row" style="gap:8px;flex-wrap:wrap">${mic}<button class="btn" data-a="trgo" ${T.busy || T.listening ? "disabled" : ""}>${T.busy ? (en ? "Translating…" : "Checking…") : en ? "Translate" : "Check"}</button></div>
+    ${out}
   </section>`;
+}
+
+async function translateNow(t, spoken) {
+  const T = CH.trans, en = T.dir === "en";
+  T.busy = true; T.src = t; T.spoken = spoken; T.out = null; T.speech = null; T.tip = ""; render();
+  const ti0 = $("#trin"); if (ti0) ti0.value = t;
+  const prompt = en
+    ? `${PT_RULES}\nTranslate the ${spoken ? "spoken English (transcribed by speech recognition, so ignore small recognition slips)" : "English text"} below into natural European Portuguese for a learner. Return ONLY a JSON object: {"pt": "the Portugal Portuguese translation (polite or neutral register if unclear)", "informal": "the informal tu version, or null if identical", "words": [{"pt": "each word or short chunk of the translation, in order", "en": "what it means here, in English"}], "notes": "one or two short English sentences on grammar or usage worth knowing"}\nText: """${t}"""`
+    : `${PT_RULES}\nThe learner ${spoken ? "said the Portuguese below out loud; it was transcribed by speech recognition, so some words may be mis-recognised, for example a Portuguese word they heard someone say and repeated" : "typed the Portuguese below, perhaps something they heard someone say"}. Work out what it means. Return ONLY a JSON object: {"intended": "the Portuguese they most likely meant${spoken ? ", replacing words that look like recognition mistakes with the Portuguese word they were most likely trying to say" : ""}, with spelling, accents and punctuation fixed", "en": "natural English meaning of it", "words": [{"pt": "each word or short chunk of the intended text, in order", "en": "what it means here, in English"}], "natural": "how a person from Portugal would naturally say it (identical to intended if it is already natural)", "notes": "one or two short English sentences on anything worth knowing, such as slang, an idiom or a contraction; do not mention other countries"}\nText: """${t}"""`;
+  try { T.out = await askJSON(prompt, { modelTier: "default" }); } catch (e) { toast(aiErr(e)); }
+  T.busy = false;
+  const o = T.out;
+  if (o && !en && spoken && o.intended) T.speech = analyseSpeech([String(o.intended)], [t]);
+  if (o) { S.stats.chats++; save(); }
+  render(); const ti = $("#trin"); if (ti) ti.value = t;
+  if (o && en && o.pt && (spoken || S.settings.autoplay)) speak(String(o.pt));
+  if (T.speech && !T.speech.perfect) {
+    try { T.tip = await pronunciationTip(T.speech.target, T.speech); } catch (e) { T.tip = ""; }
+    if (T.out === o) render();
+  }
 }
 function chatAsk() {
   return `<section class="card stack"><h2>Ask a grammar question</h2>
@@ -1621,17 +1660,20 @@ const ACT = {
   chtr: b => { const m = CH.msgs[+b.dataset.i]; m.showTr = !m.showTr; render(); },
   chsave: b => { const m = CH.msgs[+b.dataset.i]; const k = "c:" + Date.now(); S.custom[k] = { pt: m.text, en: m.tr }; S.cards[k] = newCard(); save(); toast("Saved to your review queue"); },
   trdir: b => { CH.trans.dir = b.dataset.d; CH.trans.out = null; render(); },
-  trgo: async () => {
-    const t = $("#trin").value.trim(); if (!t) return;
-    CH.trans.busy = true; CH.trans.src = t; render();
-    const prompt = CH.trans.dir === "en"
-      ? `${PT_RULES}\nTranslate the text below into natural European Portuguese for a learner. Return ONLY a JSON object: {"pt": "the Portugal Portuguese translation (polite or neutral register if unclear)", "informal": "the informal tu version, or null if identical", "literal": "short word-by-word English gloss", "notes": "one or two short English sentences on grammar or usage worth knowing"}\nText: """${t}"""`
-      : `${PT_RULES}\nThe learner pasted or wrote the Portuguese text below. Return ONLY a JSON object: {"en": "natural English translation", "natural": "the text as a person from Portugal would naturally say it (identical if it is already natural)", "notes": "one or two short English sentences on anything worth knowing; do not mention other countries"}\nText: """${t}"""`;
-    try { CH.trans.out = await askJSON(prompt, { modelTier: "default" }); } catch (e) { toast(aiErr(e)); }
-    CH.trans.busy = false; render(); const ti = $("#trin"); if (ti) ti.value = CH.trans.src;
-    if (CH.trans.out && CH.trans.out.pt && S.settings.autoplay) speak(CH.trans.out.pt);
+  trgo: () => { const t = $("#trin").value.trim(); if (t && !CH.trans.busy) translateNow(t, false); },
+  trmic: () => {
+    const T = CH.trans;
+    if (T.listening) { stopListening(); return; }
+    if (!canListen()) { toast(micErr("unsupported")); return; }
+    T.listening = true; T.interim = ""; render();
+    listenOnce({ lang: T.dir === "en" ? EN_LANG : "pt-PT",
+      onInterim: t => { T.interim = t; const el = $("#trinterim"); if (el) el.textContent = t; },
+      onError: c => { T.listening = false; render(); const m = micErr(c); if (m) toast(m); },
+      onDone: alts => { T.listening = false; T.interim = ""; translateNow(alts[0], true); } });
   },
-  trsave: () => { const o = CH.trans.out; if (!o || !o.pt) return; const k = "c:" + Date.now(); S.custom[k] = { pt: String(o.pt), en: CH.trans.src, tip: o.notes ? String(o.notes) : undefined }; S.cards[k] = newCard(); save(); toast("Saved to your review queue"); },
+  trsave: () => { const o = CH.trans.out; if (!o) return;
+    const pt = o.pt ? String(o.pt) : String(o.natural || o.intended || CH.trans.src), en = o.pt ? CH.trans.src : String(o.en || "");
+    if (!pt || !en) return; const k = "c:" + Date.now(); S.custom[k] = { pt, en, tip: o.notes ? String(o.notes) : undefined }; S.cards[k] = newCard(); save(); toast("Saved to your review queue"); },
   askgo: async () => {
     const q = $("#askin").value.trim(); if (!q || CH.askBusy) return;
     const a = { id: "ask" + Date.now(), q, a: "" }; CH.asks.unshift(a); CH.askBusy = true; render(); $("#askin").value = "";
@@ -1770,7 +1812,7 @@ function setupUpdates() {
   navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.type === "version") { APP_VERSION = e.data.version; const v = $("#appver"); if (v) v.textContent = APP_VERSION.replace("pois-", ""); } });
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!hadController || reloading) return; /* first install: already the newest */
-    const busy = !!(L || ST || FL || CH.busy || CH.listening || (W && W.listening));
+    const busy = !!(L || ST || FL || CH.busy || CH.listening || CH.trans.listening || (W && W.listening));
     if (Date.now() - BOOT_AT < 20000 || GATE || !busy) { reloading = true; location.reload(); }
     else { UPDATE_READY = true; showUpdateBar(); }
   });
